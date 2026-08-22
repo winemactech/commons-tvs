@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commons Upcoming Events</title>
+  <title>Upcoming Events</title>
   <style>
     :root {
       --patriots-navy: #002244;
@@ -137,7 +137,7 @@
 <body>
 
   <header>
-    <h1>Commons Events</h1>
+    <h1>Upcoming Events</h1>
     <div class="badge">Upcoming</div>
   </header>
 
@@ -151,8 +151,14 @@
     // Direct Bound iCal Feed URL
     const boundIcalUrl = "https://gobound.com/mn/schools/winemac/calendar/ical/2417b68941d2412";
     
-    // We use a free CORS proxy to fetch the calendar feed directly in the browser
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`;
+    // Try multiple CORS proxies in case one fails
+    const proxyUrls = [
+      `https://corsproxy.io/?${encodeURIComponent(boundIcalUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`,
+      `https://cors-anywhere.herokuapp.com/${boundIcalUrl}`
+    ];
+
+    let currentProxyIndex = 0;
 
     // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
     function parseICalDate(dateStr) {
@@ -195,17 +201,26 @@
       return dateObj.toLocaleDateString('en-US', options);
     }
 
-    async function fetchEvents() {
-      try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    async function fetchEventsWithRetry() {
+      for (let i = 0; i < proxyUrls.length; i++) {
+        try {
+          const response = await fetch(proxyUrls[i], { 
+            method: 'GET',
+            timeout: 10000
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.text();
+          parseAndRenderICS(data);
+          return; // Success, exit
+        } catch (error) {
+          console.error(`Proxy ${i + 1} failed:`, error);
+          if (i === proxyUrls.length - 1) {
+            // All proxies failed
+            displayError(`Unable to load events from Bound calendar. Please try refreshing the page.`);
+          }
         }
-        const data = await response.text();
-        parseAndRenderICS(data);
-      } catch (error) {
-        console.error("Error loading events:", error);
-        displayError(`Unable to load events: ${error.message}`);
       }
     }
 
@@ -225,7 +240,6 @@
       blocks.slice(1).forEach(block => {
         const summaryMatch = block.match(/SUMMARY:(.*)/);
         const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
-        const dtendMatch = block.match(/DTEND(?:;[^:]*)?:(.*)/);
 
         if (summaryMatch && dtstartMatch) {
           const title = summaryMatch[1].trim();
@@ -270,10 +284,10 @@
     }
 
     // Initial Fetch
-    fetchEvents();
+    fetchEventsWithRetry();
 
     // Auto-refresh every 15 minutes to keep TV updated
-    setInterval(fetchEvents, 15 * 60 * 1000);
+    setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
   </script>
 </body>
 </html>
