@@ -242,17 +242,14 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Staff Google Calendar ID
-    const staffCalendarId = "c_70b03372ad6bd706e3f3f66c5e0488170f4047fb8e32e451417c632729c816b2@group.calendar.google.com";
+    // Staff Google Calendar iCal Feed URL (public)
+    const staffCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_70b03372ad6bd706e3f3f66c5e0488170f4047fb8e32e451417c632729c816b2%40group.calendar.google.com/public/basic.ics";
     
-    // Google Drive folder ID for staff photos
-    const driveFolderId = "1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF";
-
-    // Multiple CORS proxies for Google Calendar
+    // Multiple CORS proxies for fetching the iCal feed
     const calendarProxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(`https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`)}`,
-      `https://cors-anywhere.herokuapp.com/https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`
+      `https://corsproxy.io/?${encodeURIComponent(staffCalendarIcalUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(staffCalendarIcalUrl)}`,
+      `https://cors-anywhere.herokuapp.com/${staffCalendarIcalUrl}`
     ];
 
     let studentScrollInterval = null;
@@ -327,17 +324,19 @@
     async function fetchStaffBirthdaysWithRetry() {
       for (let i = 0; i < calendarProxyUrls.length; i++) {
         try {
+          console.log(`Attempting proxy ${i + 1}: ${calendarProxyUrls[i].substring(0, 50)}...`);
           const response = await fetch(calendarProxyUrls[i]);
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.text();
+          console.log("Successfully fetched calendar data");
           parseAndRenderStaffBirthdays(data);
           return;
         } catch (error) {
           console.error(`Proxy ${i + 1} failed:`, error);
           if (i === calendarProxyUrls.length - 1) {
-            displayStaffError(`Unable to load staff birthdays. Please check the calendar ID and try refreshing.`);
+            displayStaffError(`Unable to load staff birthdays. Make sure the calendar is set to Public in Google Calendar settings.`);
           }
         }
       }
@@ -374,6 +373,8 @@
         }
       });
 
+      console.log(`Found ${birthdays.length} birthdays`);
+
       // Sort by date and get upcoming birthdays (next 30 days)
       const now = new Date();
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -382,6 +383,8 @@
         .filter(bd => bd.dateObj >= now && bd.dateObj <= thirtyDaysFromNow)
         .sort((a, b) => a.timestamp - b.timestamp)
         .slice(0, 2); // Show only 2 at a time
+
+      console.log(`Found ${upcomingBirthdays.length} upcoming birthdays`);
 
       if (upcomingBirthdays.length === 0) {
         container.innerHTML = '<div class="error-message">No upcoming staff birthdays in the next 30 days.</div>';
@@ -395,7 +398,7 @@
         const formattedDate = formatDateShort(bd.dateObj);
         
         card.innerHTML = `
-          <div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--patriots-red); background-color: rgba(176, 183, 188, 0.3); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--patriots-silver);">Photo</div>
+          <div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--patriots-red); background-color: rgba(176, 183, 188, 0.3); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--patriots-silver); font-size: 0.9rem;">Photo</div>
           <div class="staff-name">${bd.name}</div>
           <div class="staff-date">Birthday: ${formattedDate}</div>
         `;
