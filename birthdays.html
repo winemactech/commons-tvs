@@ -248,10 +248,12 @@
     // Google Drive folder ID for staff photos
     const driveFolderId = "1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF";
 
-    // CORS proxy for Google Calendar
-    const calendarProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(
-      `https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`
-    )}`;
+    // Multiple CORS proxies for Google Calendar
+    const calendarProxyUrls = [
+      `https://corsproxy.io/?${encodeURIComponent(`https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`)}`,
+      `https://cors-anywhere.herokuapp.com/https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`
+    ];
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
@@ -321,18 +323,23 @@
       }, 2000);
     }
 
-    // Fetch staff birthdays from Google Calendar
-    async function fetchStaffBirthdays() {
-      try {
-        const response = await fetch(calendarProxyUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    // Fetch staff birthdays from Google Calendar with retry logic
+    async function fetchStaffBirthdaysWithRetry() {
+      for (let i = 0; i < calendarProxyUrls.length; i++) {
+        try {
+          const response = await fetch(calendarProxyUrls[i]);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.text();
+          parseAndRenderStaffBirthdays(data);
+          return;
+        } catch (error) {
+          console.error(`Proxy ${i + 1} failed:`, error);
+          if (i === calendarProxyUrls.length - 1) {
+            displayStaffError(`Unable to load staff birthdays. Please check the calendar ID and try refreshing.`);
+          }
         }
-        const data = await response.text();
-        parseAndRenderStaffBirthdays(data);
-      } catch (error) {
-        console.error("Error loading staff birthdays:", error);
-        displayStaffError(`Unable to load staff birthdays: ${error.message}`);
       }
     }
 
@@ -385,16 +392,10 @@
       upcomingBirthdays.forEach(bd => {
         const card = document.createElement('div');
         card.className = 'staff-card';
-        
-        // Create photo URL from Drive folder
-        // Staff name should match filename format: firstname-lastname
-        const photoUrl = `https://drive.google.com/thumbnail?id=$(getFileIdByName("${bd.name}"))&sz=w200`;
-        
-        // For now, use a placeholder approach - we'll try to load from Drive
         const formattedDate = formatDateShort(bd.dateObj);
         
         card.innerHTML = `
-          <img src="https://drive.google.com/file/d/1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF/preview" alt="${bd.name}" class="staff-photo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23B0B7BC%22/%3E%3C/svg%3E'">
+          <div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--patriots-red); background-color: rgba(176, 183, 188, 0.3); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--patriots-silver);">Photo</div>
           <div class="staff-name">${bd.name}</div>
           <div class="staff-date">Birthday: ${formattedDate}</div>
         `;
@@ -413,12 +414,12 @@
 
     // Initialize
     renderStudentBirthdaysPlaceholder();
-    fetchStaffBirthdays();
+    fetchStaffBirthdaysWithRetry();
     updateLastUpdatedTime();
 
     // Auto-refresh every 15 minutes
     setInterval(() => {
-      fetchStaffBirthdays();
+      fetchStaffBirthdaysWithRetry();
       updateLastUpdatedTime();
     }, 15 * 60 * 1000);
   </script>
