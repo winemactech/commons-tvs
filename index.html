@@ -53,28 +53,30 @@
     .menu-container {
       flex: 1;
       display: flex;
-      gap: 3rem;
+      gap: 2rem;
       justify-content: center;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .menu-card {
       background-color: rgba(255, 255, 255, 0.05);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
-      padding: 3rem 4rem;
+      padding: 2rem 3rem;
       text-align: center;
       text-decoration: none;
       color: var(--patriots-white);
       transition: all 0.3s ease;
-      flex: 1;
-      max-width: 300px;
+      flex: 0 1 calc(33.333% - 2rem);
+      min-width: 200px;
+      max-width: 250px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 250px;
+      min-height: 220px;
     }
 
     .menu-card:hover {
@@ -84,7 +86,7 @@
     }
 
     .menu-card h2 {
-      font-size: 2.5rem;
+      font-size: 2rem;
       font-weight: 800;
       margin-bottom: 1rem;
       letter-spacing: 1px;
@@ -92,7 +94,7 @@
     }
 
     .menu-card p {
-      font-size: 1.2rem;
+      font-size: 1rem;
       color: var(--patriots-silver);
       font-weight: 500;
     }
@@ -118,6 +120,10 @@
     <a href="events.html" class="menu-card">
       <h2>Events</h2>
       <p>Upcoming school events and activities</p>
+    </a>
+    <a href="workshops.html" class="menu-card">
+      <h2>Workshops</h2>
+      <p>Upcoming workshops and training sessions</p>
     </a>
     <a href="birthdays.html" class="menu-card">
       <h2>Birthdays</h2>
