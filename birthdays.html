@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Win-E-Mac Birthdays</title>
+  <style>
+    :root {
+      --patriots-navy: #002244;
+      --patriots-red: #C60C30;
+      --patriots-silver: #B0B7BC;
+      --patriots-white: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--patriots-navy);
+      color: var(--patriots-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 2rem 3rem;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      border-bottom: 3px solid var(--patriots-red);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      height: 80px;
+      width: auto;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .content-wrapper {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      overflow: hidden;
+    }
+
+    /* LEFT SIDE - STUDENT BIRTHDAYS */
+    .student-section {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--patriots-red);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .student-scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      padding-right: 1rem;
+    }
+
+    .student-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 6px solid var(--patriots-red);
+      border-top: 1px solid rgba(176, 183, 188, 0.15);
+      border-right: 1px solid rgba(176, 183, 188, 0.15);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
+    }
+
+    .student-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--patriots-white);
+    }
+
+    .student-date {
+      font-size: 1rem;
+      color: var(--patriots-silver);
+      font-weight: 500;
+    }
+
+    /* RIGHT SIDE - STAFF BIRTHDAYS */
+    .staff-section {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .staff-cards-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+      padding-right: 1rem;
+    }
+
+    .staff-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 2px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+    }
+
+    .staff-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--patriots-red);
+      margin-bottom: 1rem;
+      background-color: rgba(176, 183, 188, 0.1);
+    }
+
+    .staff-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--patriots-white);
+      margin-bottom: 0.5rem;
+    }
+
+    .staff-date {
+      font-size: 1.1rem;
+      color: var(--patriots-silver);
+      font-weight: 500;
+    }
+
+    .error-message {
+      background-color: rgba(198, 12, 48, 0.2);
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 6px;
+      padding: 1.5rem;
+      font-size: 1.1rem;
+      color: var(--patriots-white);
+    }
+
+    .loading-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 6px;
+      padding: 1.5rem;
+      font-size: 1.1rem;
+      color: var(--patriots-white);
+    }
+
+    /* Scrollbar styling */
+    .student-scroll-container::-webkit-scrollbar,
+    .staff-cards-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .student-scroll-container::-webkit-scrollbar-track,
+    .staff-cards-container::-webkit-scrollbar-track {
+      background: rgba(176, 183, 188, 0.1);
+      border-radius: 3px;
+    }
+
+    .student-scroll-container::-webkit-scrollbar-thumb,
+    .staff-cards-container::-webkit-scrollbar-thumb {
+      background: rgba(198, 12, 48, 0.5);
+      border-radius: 3px;
+    }
+
+    .student-scroll-container::-webkit-scrollbar-thumb:hover,
+    .staff-cards-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(198, 12, 48, 0.7);
+    }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(176, 183, 188, 0.2);
+      color: var(--patriots-silver);
+      font-size: 0.9rem;
+      opacity: 0.7;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
+    <h1>Win-E-Mac Birthdays</h1>
+  </header>
+
+  <div class="content-wrapper">
+    <!-- LEFT SIDE - STUDENT BIRTHDAYS -->
+    <div class="student-section">
+      <h2 class="section-title">Student Birthdays</h2>
+      <div class="student-scroll-container" id="student-container">
+        <div class="loading-message">Loading student birthdays...</div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE - STAFF BIRTHDAYS -->
+    <div class="staff-section">
+      <h2 class="section-title">Staff Birthdays</h2>
+      <div class="staff-cards-container" id="staff-container">
+        <div class="loading-message">Loading staff birthdays...</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Last updated: <span id="last-updated">Just now</span></footer>
+
+  <script>
+    // Staff Google Calendar ID
+    const staffCalendarId = "c_70b03372ad6bd706e3f3f66c5e0488170f4047fb8e32e451417c632729c816b2@group.calendar.google.com";
+    
+    // Google Drive folder ID for staff photos
+    const driveFolderId = "1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF";
+
+    // CORS proxy for Google Calendar
+    const calendarProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(
+      `https://calendar.google.com/calendar/ical/${encodeURIComponent(staffCalendarId)}/public/basic.ics`
+    )}`;
+
+    let studentScrollInterval = null;
+    let studentScrollDelay = null;
+
+    // Parse iCal date format
+    function parseICalDate(dateStr) {
+      if (!dateStr) return null;
+      
+      dateStr = dateStr.trim();
+      
+      if (dateStr.includes('T')) {
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        const hour = dateStr.substring(9, 11);
+        const minute = dateStr.substring(11, 13);
+        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
+      } else {
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        return new Date(`${year}-${month}-${day}T00:00:00Z`);
+      }
+    }
+
+    // Format date for display (e.g., "Aug 22")
+    function formatDateShort(dateObj) {
+      if (!dateObj) return "TBD";
+      
+      const options = {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'America/Chicago'
+      };
+      
+      return dateObj.toLocaleDateString('en-US', options);
+    }
+
+    // Update last updated timestamp
+    function updateLastUpdatedTime() {
+      const now = new Date();
+      const options = {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'America/Chicago'
+      };
+      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
+    }
+
+    // Start auto-scroll for student birthdays
+    function startStudentScroll() {
+      const container = document.getElementById('student-container');
+      const scrollContainer = container.parentElement;
+      
+      if (studentScrollInterval) clearInterval(studentScrollInterval);
+      if (studentScrollDelay) clearTimeout(studentScrollDelay);
+      
+      studentScrollDelay = setTimeout(() => {
+        studentScrollInterval = setInterval(() => {
+          scrollContainer.scrollTop += 1;
+          
+          if (scrollContainer.scrollTop >= container.scrollHeight - scrollContainer.clientHeight) {
+            scrollContainer.scrollTop = 0;
+          }
+        }, 50);
+      }, 2000);
+    }
+
+    // Fetch staff birthdays from Google Calendar
+    async function fetchStaffBirthdays() {
+      try {
+        const response = await fetch(calendarProxyUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.text();
+        parseAndRenderStaffBirthdays(data);
+      } catch (error) {
+        console.error("Error loading staff birthdays:", error);
+        displayStaffError(`Unable to load staff birthdays: ${error.message}`);
+      }
+    }
+
+    function displayStaffError(message) {
+      const container = document.getElementById('staff-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function parseAndRenderStaffBirthdays(icsData) {
+      const container = document.getElementById('staff-container');
+      container.innerHTML = '';
+
+      const birthdays = [];
+      const blocks = icsData.split('BEGIN:VEVENT');
+
+      blocks.slice(1).forEach(block => {
+        const summaryMatch = block.match(/SUMMARY:(.*)/);
+        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+
+        if (summaryMatch && dtstartMatch) {
+          const title = summaryMatch[1].trim();
+          const rawDate = dtstartMatch[1].trim();
+          const dateObj = parseICalDate(rawDate);
+          
+          if (dateObj) {
+            birthdays.push({
+              name: title,
+              dateObj,
+              timestamp: dateObj.getTime()
+            });
+          }
+        }
+      });
+
+      // Sort by date and get upcoming birthdays (next 30 days)
+      const now = new Date();
+      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      const upcomingBirthdays = birthdays
+        .filter(bd => bd.dateObj >= now && bd.dateObj <= thirtyDaysFromNow)
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .slice(0, 2); // Show only 2 at a time
+
+      if (upcomingBirthdays.length === 0) {
+        container.innerHTML = '<div class="error-message">No upcoming staff birthdays in the next 30 days.</div>';
+        return;
+      }
+
+      // Render staff birthday cards
+      upcomingBirthdays.forEach(bd => {
+        const card = document.createElement('div');
+        card.className = 'staff-card';
+        
+        // Create photo URL from Drive folder
+        // Staff name should match filename format: firstname-lastname
+        const photoUrl = `https://drive.google.com/thumbnail?id=$(getFileIdByName("${bd.name}"))&sz=w200`;
+        
+        // For now, use a placeholder approach - we'll try to load from Drive
+        const formattedDate = formatDateShort(bd.dateObj);
+        
+        card.innerHTML = `
+          <img src="https://drive.google.com/file/d/1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF/preview" alt="${bd.name}" class="staff-photo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23B0B7BC%22/%3E%3C/svg%3E'">
+          <div class="staff-name">${bd.name}</div>
+          <div class="staff-date">Birthday: ${formattedDate}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Placeholder for student birthdays (ready to connect later)
+    function renderStudentBirthdaysPlaceholder() {
+      const container = document.getElementById('student-container');
+      container.innerHTML = `
+        <div class="loading-message">Student birthdays placeholder - ready for connection</div>
+      `;
+      startStudentScroll();
+    }
+
+    // Initialize
+    renderStudentBirthdaysPlaceholder();
+    fetchStaffBirthdays();
+    updateLastUpdatedTime();
+
+    // Auto-refresh every 15 minutes
+    setInterval(() => {
+      fetchStaffBirthdays();
+      updateLastUpdatedTime();
+    }, 15 * 60 * 1000);
+  </script>
+</body>
+</html>
