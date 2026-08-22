@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commons Upcoming Events</title>
+  <style>
+    :root {
+      --patriots-navy: #002244;
+      --patriots-red: #C60C30;
+      --patriots-silver: #B0B7BC;
+      --patriots-white: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--patriots-navy);
+      color: var(--patriots-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 3rem;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid var(--patriots-red);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .badge {
+      background-color: var(--patriots-red);
+      color: var(--patriots-white);
+      padding: 0.5rem 1.5rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .event-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 10px solid var(--patriots-red);
+      border-top: 1px solid rgba(176, 183, 188, 0.2);
+      border-right: 1px solid rgba(176, 183, 188, 0.2);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.2);
+      border-radius: 8px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .event-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .event-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--patriots-white);
+    }
+
+    .event-date {
+      font-size: 1.4rem;
+      color: var(--patriots-silver);
+      font-weight: 500;
+    }
+
+    .event-time-badge {
+      background-color: var(--patriots-navy);
+      border: 2px solid var(--patriots-silver);
+      color: var(--patriots-white);
+      font-size: 1.5rem;
+      font-weight: bold;
+      padding: 0.8rem 1.5rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .error-message {
+      background-color: rgba(198, 12, 48, 0.2);
+      border-left: 10px solid var(--patriots-red);
+      border-radius: 8px;
+      padding: 1.5rem 2rem;
+      font-size: 1.2rem;
+      color: var(--patriots-white);
+    }
+
+    /* Auto-refresh indicator/footer */
+    footer {
+      position: absolute;
+      bottom: 1.5rem;
+      right: 3rem;
+      color: var(--patriots-silver);
+      font-size: 1rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Commons Events</h1>
+    <div class="badge">Upcoming</div>
+  </header>
+
+  <div class="event-list" id="events-container">
+    <!-- Events will be populated dynamically -->
+  </div>
+
+  <footer>Live Commons Schedule • Updates Automatically</footer>
+
+  <script>
+    // Extract Public iCal URL from Google Calendar ID
+    const calendarId = "cDVwc2dkNTNlb2FxZ2JmbGFjb25uOHR0bDQ0OG9jZ2dAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20";
+    const icalUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calendarId)}/public/basic.ics`;
+    
+    // We use a free CORS proxy to fetch the calendar feed directly in the browser
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(icalUrl)}`;
+
+    // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
+    function parseICalDate(dateStr) {
+      if (!dateStr) return null;
+      
+      // Remove any whitespace
+      dateStr = dateStr.trim();
+      
+      // Handle both datetime and date-only formats
+      if (dateStr.includes('T')) {
+        // Format: 20260822T143000Z
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        const hour = dateStr.substring(9, 11);
+        const minute = dateStr.substring(11, 13);
+        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
+      } else {
+        // Format: 20260822
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        return new Date(`${year}-${month}-${day}T00:00:00Z`);
+      }
+    }
+
+    // Format date for display (e.g., "Friday, August 22 at 2:30 PM")
+    function formatDateForDisplay(dateObj) {
+      if (!dateObj) return "TBD";
+      
+      const options = {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'America/New_York' // Adjust timezone as needed
+      };
+      
+      return dateObj.toLocaleDateString('en-US', options);
+    }
+
+    async function fetchEvents() {
+      try {
+        const response = await fetch(proxyUrl);
+        const data = await response.text();
+        parseAndRenderICS(data);
+      } catch (error) {
+        console.error("Error loading events:", error);
+        displayError("Unable to load events. Please check your connection.");
+      }
+    }
+
+    function displayError(message) {
+      const container = document.getElementById('events-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function parseAndRenderICS(icsData) {
+      const container = document.getElementById('events-container');
+      container.innerHTML = ''; // Clear existing
+
+      // Simple ICS Event Extraction logic
+      const events = [];
+      const blocks = icsData.split('BEGIN:VEVENT');
+
+      blocks.slice(1).forEach(block => {
+        const summaryMatch = block.match(/SUMMARY:(.*)/);
+        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+
+        if (summaryMatch && dtstartMatch) {
+          const title = summaryMatch[1].trim();
+          const rawDate = dtstartMatch[1].trim();
+          const dateObj = parseICalDate(rawDate);
+          
+          events.push({ 
+            title, 
+            rawDate,
+            dateObj,
+            timestamp: dateObj ? dateObj.getTime() : 0
+          });
+        }
+      });
+
+      // Sort events by date and filter out past events
+      const now = new Date();
+      const upcomingEvents = events
+        .filter(evt => evt.dateObj && evt.dateObj > now)
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .slice(0, 5);
+
+      if (upcomingEvents.length === 0) {
+        displayError("No upcoming events scheduled.");
+        return;
+      }
+
+      // Show top 5 upcoming events
+      upcomingEvents.forEach(evt => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
+        const formattedDate = formatDateForDisplay(evt.dateObj);
+        card.innerHTML = `
+          <div class="event-details">
+            <div class="event-title">${evt.title}</div>
+            <div class="event-date">${formattedDate}</div>
+          </div>
+          <div class="event-time-badge">Upcoming</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Initial Fetch
+    fetchEvents();
+
+    // Auto-refresh every 15 minutes to keep TV updated
+    setInterval(fetchEvents, 15 * 60 * 1000);
+  </script>
+</body>
+</html>
