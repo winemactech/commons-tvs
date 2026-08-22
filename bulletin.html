@@ -79,6 +79,8 @@
       font-size: 1.3rem;
       line-height: 1.6;
       color: var(--patriots-white);
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
     .error-message {
@@ -236,16 +238,7 @@
       announcements.forEach((announcement, index) => {
         const card = document.createElement('div');
         card.className = 'announcement-card';
-        
-        // Escape HTML to prevent injection
-        const safeText = announcement
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-        
-        card.textContent = safeText;
+        card.textContent = announcement;
         container.appendChild(card);
       });
 
