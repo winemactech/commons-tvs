@@ -52,10 +52,17 @@
 
     .events-wrapper {
       flex: 1;
-      overflow-y: auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .events-scroll-container {
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      padding-right: 1rem;
     }
 
     .event-card {
@@ -71,11 +78,7 @@
       gap: 2rem;
       align-items: center;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-      transition: background-color 0.2s;
-    }
-
-    .event-card:hover {
-      background-color: rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
     }
 
     .event-title {
@@ -124,25 +127,6 @@
       opacity: 0.7;
       text-align: right;
     }
-
-    /* Scrollbar styling */
-    .events-wrapper::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .events-wrapper::-webkit-scrollbar-track {
-      background: rgba(176, 183, 188, 0.1);
-      border-radius: 4px;
-    }
-
-    .events-wrapper::-webkit-scrollbar-thumb {
-      background: rgba(198, 12, 48, 0.5);
-      border-radius: 4px;
-    }
-
-    .events-wrapper::-webkit-scrollbar-thumb:hover {
-      background: rgba(198, 12, 48, 0.7);
-    }
   </style>
 </head>
 <body>
@@ -153,7 +137,9 @@
   </header>
 
   <div class="events-wrapper" id="events-container">
-    <div class="loading-message">Loading events...</div>
+    <div class="events-scroll-container">
+      <div class="loading-message">Loading events...</div>
+    </div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
@@ -168,6 +154,9 @@
       `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`,
       `https://cors-anywhere.herokuapp.com/${boundIcalUrl}`
     ];
+
+    let scrollInterval = null;
+    let scrollDelay = null;
 
     // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
     function parseICalDate(dateStr) {
@@ -218,6 +207,28 @@
       document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
     }
 
+    // Start auto-scroll
+    function startAutoScroll() {
+      const container = document.querySelector('.events-wrapper');
+      const scrollContainer = document.querySelector('.events-scroll-container');
+      
+      // Clear any existing scroll intervals
+      if (scrollInterval) clearInterval(scrollInterval);
+      if (scrollDelay) clearTimeout(scrollDelay);
+      
+      // Wait 2 seconds before starting scroll
+      scrollDelay = setTimeout(() => {
+        scrollInterval = setInterval(() => {
+          container.scrollTop += 1;
+          
+          // If we've scrolled to the bottom, reset to top
+          if (container.scrollTop >= scrollContainer.scrollHeight - container.clientHeight) {
+            container.scrollTop = 0;
+          }
+        }, 50); // Adjust speed here (lower = faster)
+      }, 2000); // 2 second delay before starting
+    }
+
     async function fetchEventsWithRetry() {
       for (let i = 0; i < proxyUrls.length; i++) {
         try {
@@ -243,11 +254,11 @@
 
     function displayError(message) {
       const container = document.getElementById('events-container');
-      container.innerHTML = `<div class="error-message">${message}</div>`;
+      container.innerHTML = `<div class="events-scroll-container"><div class="error-message">${message}</div></div>`;
     }
 
     function parseAndRenderICS(icsData) {
-      const container = document.getElementById('events-container');
+      const container = document.querySelector('.events-scroll-container');
       container.innerHTML = '';
 
       const events = [];
@@ -282,7 +293,7 @@
         .slice(0, 10);
 
       if (upcomingEvents.length === 0) {
-        displayError("No upcoming events scheduled.");
+        container.innerHTML = '<div class="error-message">No upcoming events scheduled.</div>';
         return;
       }
 
@@ -300,6 +311,9 @@
         `;
         container.appendChild(card);
       });
+
+      // Start auto-scroll after rendering
+      startAutoScroll();
     }
 
     // Initial Fetch
