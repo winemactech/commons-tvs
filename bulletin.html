@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Win-E-Mac Daily Bulletin</title>
+  <style>
+    :root {
+      --patriots-navy: #002244;
+      --patriots-red: #C60C30;
+      --patriots-silver: #B0B7BC;
+      --patriots-white: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--patriots-navy);
+      color: var(--patriots-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 2rem 3rem;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      border-bottom: 3px solid var(--patriots-red);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      height: 80px;
+      width: auto;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .bulletin-wrapper {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .bulletin-scroll-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding-right: 1rem;
+      overflow-y: auto;
+    }
+
+    .announcement-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 6px solid var(--patriots-red);
+      border-top: 1px solid rgba(176, 183, 188, 0.15);
+      border-right: 1px solid rgba(176, 183, 188, 0.15);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
+      border-radius: 6px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
+      font-size: 1.3rem;
+      line-height: 1.6;
+      color: var(--patriots-white);
+    }
+
+    .error-message {
+      background-color: rgba(198, 12, 48, 0.2);
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 6px;
+      padding: 1.5rem;
+      font-size: 1.2rem;
+      color: var(--patriots-white);
+    }
+
+    .loading-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 6px;
+      padding: 1.5rem;
+      font-size: 1.2rem;
+      color: var(--patriots-white);
+    }
+
+    /* Scrollbar styling */
+    .bulletin-scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .bulletin-scroll-container::-webkit-scrollbar-track {
+      background: rgba(176, 183, 188, 0.1);
+      border-radius: 3px;
+    }
+
+    .bulletin-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(198, 12, 48, 0.5);
+      border-radius: 3px;
+    }
+
+    .bulletin-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(198, 12, 48, 0.7);
+    }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(176, 183, 188, 0.2);
+      color: var(--patriots-silver);
+      font-size: 0.9rem;
+      opacity: 0.7;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
+    <h1>Daily Bulletin</h1>
+  </header>
+
+  <div class="bulletin-wrapper" id="bulletin-container">
+    <div class="bulletin-scroll-container">
+      <div class="loading-message">Loading announcements...</div>
+    </div>
+  </div>
+
+  <footer>Last updated: <span id="last-updated">Just now</span></footer>
+
+  <script>
+    // Google Doc ID (extracted from the shared link)
+    const docId = "1Lrj6TPuvSLBHuDT9iPpx-pJtRy0GYRJxda5IFgRMYfI";
+    
+    // Google Docs export URL (as plain text)
+    const googleDocUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+    
+    // CORS proxy for Google Docs
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(googleDocUrl)}`;
+
+    let scrollInterval = null;
+    let scrollDelay = null;
+
+    // Update last updated timestamp
+    function updateLastUpdatedTime() {
+      const now = new Date();
+      const options = {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'America/Chicago'
+      };
+      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
+    }
+
+    // Start auto-scroll
+    function startAutoScroll() {
+      const container = document.querySelector('.bulletin-wrapper');
+      const scrollContainer = document.querySelector('.bulletin-scroll-container');
+      
+      // Clear any existing scroll intervals
+      if (scrollInterval) clearInterval(scrollInterval);
+      if (scrollDelay) clearTimeout(scrollDelay);
+      
+      // Wait 2 seconds before starting scroll
+      scrollDelay = setTimeout(() => {
+        scrollInterval = setInterval(() => {
+          container.scrollTop += 1;
+          
+          // If we've scrolled to the bottom, reset to top
+          if (container.scrollTop >= scrollContainer.scrollHeight - container.clientHeight) {
+            container.scrollTop = 0;
+          }
+        }, 50);
+      }, 2000);
+    }
+
+    async function fetchAndDisplayBulletin() {
+      try {
+        console.log("Fetching bulletin from Google Doc...");
+        const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        console.log("Successfully fetched bulletin");
+        parseAndRenderBulletin(text);
+        updateLastUpdatedTime();
+      } catch (error) {
+        console.error("Error loading bulletin:", error);
+        displayError(`Unable to load bulletin. Make sure the Google Doc is publicly shared. Error: ${error.message}`);
+      }
+    }
+
+    function displayError(message) {
+      const container = document.querySelector('.bulletin-scroll-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function parseAndRenderBulletin(docText) {
+      const container = document.querySelector('.bulletin-scroll-container');
+      container.innerHTML = '';
+
+      // Split by double line breaks or multiple newlines to separate announcements
+      const announcements = docText
+        .split(/\n\s*\n+/)
+        .map(announcement => announcement.trim())
+        .filter(announcement => announcement.length > 0);
+
+      console.log(`Found ${announcements.length} announcements`);
+
+      if (announcements.length === 0) {
+        container.innerHTML = '<div class="error-message">No announcements found in the bulletin.</div>';
+        return;
+      }
+
+      // Display each announcement as a card
+      announcements.forEach((announcement, index) => {
+        const card = document.createElement('div');
+        card.className = 'announcement-card';
+        
+        // Escape HTML to prevent injection
+        const safeText = announcement
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+        
+        card.textContent = safeText;
+        container.appendChild(card);
+      });
+
+      // Start auto-scroll after rendering
+      startAutoScroll();
+    }
+
+    // Initial Fetch
+    fetchAndDisplayBulletin();
+
+    // Auto-refresh every 5 minutes
+    setInterval(fetchAndDisplayBulletin, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
