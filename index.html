@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Win-E-Mac Events</title>
+  <title>Win-E-Mac Commons TV</title>
   <style>
     :root {
       --patriots-navy: #002244;
@@ -35,97 +35,70 @@
       gap: 2rem;
       border-bottom: 3px solid var(--patriots-red);
       padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
+      margin-bottom: 3rem;
     }
 
     .logo {
-      height: 80px;
+      height: 100px;
       width: auto;
     }
 
     h1 {
-      font-size: 3rem;
+      font-size: 3.5rem;
       font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .menu-container {
+      flex: 1;
+      display: flex;
+      gap: 3rem;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .menu-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 3rem 4rem;
+      text-align: center;
+      text-decoration: none;
+      color: var(--patriots-white);
+      transition: all 0.3s ease;
+      flex: 1;
+      max-width: 300px;
+      cursor: pointer;
+    }
+
+    .menu-card:hover {
+      background-color: rgba(198, 12, 48, 0.1);
+      transform: scale(1.05);
+      box-shadow: 0 8px 30px rgba(198, 12, 48, 0.3);
+    }
+
+    .menu-card h2 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
 
-    .events-wrapper {
-      flex: 1;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .events-scroll-container {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      padding-right: 1rem;
-    }
-
-    .event-card {
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
-      border-top: 1px solid rgba(176, 183, 188, 0.15);
-      border-right: 1px solid rgba(176, 183, 188, 0.15);
-      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
-      border-radius: 6px;
-      padding: 1.25rem 1.5rem;
-      display: grid;
-      grid-template-columns: 2fr 1.5fr 1.5fr;
-      gap: 2rem;
-      align-items: center;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-      flex-shrink: 0;
-    }
-
-    .event-title {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--patriots-white);
-    }
-
-    .event-datetime {
-      font-size: 1.3rem;
+    .menu-card p {
+      font-size: 1.2rem;
       color: var(--patriots-silver);
       font-weight: 500;
     }
 
-    .event-location {
-      font-size: 1.1rem;
-      color: var(--patriots-silver);
-      font-style: italic;
-    }
-
-    .error-message {
-      background-color: rgba(198, 12, 48, 0.2);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 6px;
-      padding: 1.5rem;
-      font-size: 1.2rem;
-      color: var(--patriots-white);
-    }
-
-    .loading-message {
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 6px;
-      padding: 1.5rem;
-      font-size: 1.2rem;
-      color: var(--patriots-white);
-    }
-
-    /* Footer with refresh info */
     footer {
-      margin-top: 2rem;
       padding-top: 1rem;
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
       font-size: 0.9rem;
       opacity: 0.7;
-      text-align: right;
+      text-align: center;
     }
   </style>
 </head>
@@ -133,194 +106,21 @@
 
   <header>
     <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
-    <h1>Win-E-Mac Events</h1>
+    <h1>Commons TV Menu</h1>
   </header>
 
-  <div class="events-wrapper" id="events-container">
-    <div class="events-scroll-container">
-      <div class="loading-message">Loading events...</div>
-    </div>
+  <div class="menu-container">
+    <a href="events.html" class="menu-card">
+      <h2>📅 Events</h2>
+      <p>Upcoming school events and activities</p>
+    </a>
+    <a href="birthdays.html" class="menu-card">
+      <h2>🎂 Birthdays</h2>
+      <p>Student and staff birthdays</p>
+    </a>
   </div>
 
-  <footer>Last updated: <span id="last-updated">Just now</span></footer>
+  <footer>Win-E-Mac Patriots Commons Display</footer>
 
-  <script>
-    // Direct Bound iCal Feed URL
-    const boundIcalUrl = "https://gobound.com/mn/schools/winemac/calendar/ical/2417b68941d2412";
-    
-    // Try multiple CORS proxies in case one fails
-    const proxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(boundIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`,
-      `https://cors-anywhere.herokuapp.com/${boundIcalUrl}`
-    ];
-
-    let scrollInterval = null;
-    let scrollDelay = null;
-
-    // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
-    function parseICalDate(dateStr) {
-      if (!dateStr) return null;
-      
-      dateStr = dateStr.trim();
-      
-      if (dateStr.includes('T')) {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        const hour = dateStr.substring(9, 11);
-        const minute = dateStr.substring(11, 13);
-        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
-      } else {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        return new Date(`${year}-${month}-${day}T00:00:00Z`);
-      }
-    }
-
-    // Format date and time for display
-    function formatDateForDisplay(dateObj) {
-      if (!dateObj) return "TBD";
-      
-      const options = {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZone: 'America/Chicago'
-      };
-      
-      return dateObj.toLocaleDateString('en-US', options);
-    }
-
-    // Update last updated timestamp
-    function updateLastUpdatedTime() {
-      const now = new Date();
-      const options = {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'America/Chicago'
-      };
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
-    }
-
-    // Start auto-scroll
-    function startAutoScroll() {
-      const container = document.querySelector('.events-wrapper');
-      const scrollContainer = document.querySelector('.events-scroll-container');
-      
-      // Clear any existing scroll intervals
-      if (scrollInterval) clearInterval(scrollInterval);
-      if (scrollDelay) clearTimeout(scrollDelay);
-      
-      // Wait 2 seconds before starting scroll
-      scrollDelay = setTimeout(() => {
-        scrollInterval = setInterval(() => {
-          container.scrollTop += 1;
-          
-          // If we've scrolled to the bottom, reset to top
-          if (container.scrollTop >= scrollContainer.scrollHeight - container.clientHeight) {
-            container.scrollTop = 0;
-          }
-        }, 50); // Adjust speed here (lower = faster)
-      }, 2000); // 2 second delay before starting
-    }
-
-    async function fetchEventsWithRetry() {
-      for (let i = 0; i < proxyUrls.length; i++) {
-        try {
-          const response = await fetch(proxyUrls[i], { 
-            method: 'GET',
-            timeout: 10000
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.text();
-          parseAndRenderICS(data);
-          updateLastUpdatedTime();
-          return;
-        } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
-          if (i === proxyUrls.length - 1) {
-            displayError(`Unable to load events from Bound calendar. Please try refreshing the page.`);
-          }
-        }
-      }
-    }
-
-    function displayError(message) {
-      const container = document.getElementById('events-container');
-      container.innerHTML = `<div class="events-scroll-container"><div class="error-message">${message}</div></div>`;
-    }
-
-    function parseAndRenderICS(icsData) {
-      const container = document.querySelector('.events-scroll-container');
-      container.innerHTML = '';
-
-      const events = [];
-      const blocks = icsData.split('BEGIN:VEVENT');
-
-      blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/SUMMARY:(.*)/);
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
-        const locationMatch = block.match(/LOCATION:(.*)/);
-
-        if (summaryMatch && dtstartMatch) {
-          const title = summaryMatch[1].trim();
-          const rawDate = dtstartMatch[1].trim();
-          const location = locationMatch ? locationMatch[1].trim() : '';
-          const dateObj = parseICalDate(rawDate);
-          
-          events.push({ 
-            title, 
-            rawDate,
-            location,
-            dateObj,
-            timestamp: dateObj ? dateObj.getTime() : 0
-          });
-        }
-      });
-
-      // Sort events by date and filter out past events
-      const now = new Date();
-      const upcomingEvents = events
-        .filter(evt => evt.dateObj && evt.dateObj > now)
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .slice(0, 10);
-
-      if (upcomingEvents.length === 0) {
-        container.innerHTML = '<div class="error-message">No upcoming events scheduled.</div>';
-        return;
-      }
-
-      // Show upcoming events in three-column layout
-      upcomingEvents.forEach(evt => {
-        const card = document.createElement('div');
-        card.className = 'event-card';
-        const formattedDate = formatDateForDisplay(evt.dateObj);
-        const locationDisplay = evt.location || 'TBD';
-        
-        card.innerHTML = `
-          <div class="event-title">${evt.title}</div>
-          <div class="event-datetime">${formattedDate}</div>
-          <div class="event-location">${locationDisplay}</div>
-        `;
-        container.appendChild(card);
-      });
-
-      // Start auto-scroll after rendering
-      startAutoScroll();
-    }
-
-    // Initial Fetch
-    fetchEventsWithRetry();
-
-    // Auto-refresh every 15 minutes
-    setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
-  </script>
 </body>
 </html>
