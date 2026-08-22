@@ -58,6 +58,8 @@
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 250px);
     }
 
     .event-card {
@@ -112,6 +114,15 @@
       color: var(--patriots-white);
     }
 
+    .loading-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 10px solid var(--patriots-red);
+      border-radius: 8px;
+      padding: 1.5rem 2rem;
+      font-size: 1.2rem;
+      color: var(--patriots-white);
+    }
+
     /* Auto-refresh indicator/footer */
     footer {
       position: absolute;
@@ -131,18 +142,17 @@
   </header>
 
   <div class="event-list" id="events-container">
-    <!-- Events will be populated dynamically -->
+    <div class="loading-message">Loading events...</div>
   </div>
 
   <footer>Live Commons Schedule • Updates Automatically</footer>
 
   <script>
-    // Extract Public iCal URL from Google Calendar ID
-    const calendarId = "cDVwc2dkNTNlb2FxZ2JmbGFjb25uOHR0bDQ0OG9jZ2dAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20";
-    const icalUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calendarId)}/public/basic.ics`;
+    // Direct Bound iCal Feed URL
+    const boundIcalUrl = "https://gobound.com/mn/schools/winemac/calendar/ical/2417b68941d2412";
     
     // We use a free CORS proxy to fetch the calendar feed directly in the browser
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(icalUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`;
 
     // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
     function parseICalDate(dateStr) {
@@ -179,7 +189,7 @@
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
-        timeZone: 'America/New_York' // Adjust timezone as needed
+        timeZone: 'America/Chicago'
       };
       
       return dateObj.toLocaleDateString('en-US', options);
@@ -188,11 +198,14 @@
     async function fetchEvents() {
       try {
         const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.text();
         parseAndRenderICS(data);
       } catch (error) {
         console.error("Error loading events:", error);
-        displayError("Unable to load events. Please check your connection.");
+        displayError(`Unable to load events: ${error.message}`);
       }
     }
 
@@ -212,6 +225,7 @@
       blocks.slice(1).forEach(block => {
         const summaryMatch = block.match(/SUMMARY:(.*)/);
         const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+        const dtendMatch = block.match(/DTEND(?:;[^:]*)?:(.*)/);
 
         if (summaryMatch && dtstartMatch) {
           const title = summaryMatch[1].trim();
