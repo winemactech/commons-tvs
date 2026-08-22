@@ -168,8 +168,9 @@
     // Workshop Google Calendar iCal Feed URL (public)
     const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
     
-    // Try multiple CORS proxies in case one fails
+    // Try direct fetch first, then multiple CORS proxies
     const proxyUrls = [
+      workshopCalendarIcalUrl,
       `https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`,
       `https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`,
       `https://cors-anywhere.herokuapp.com/${workshopCalendarIcalUrl}`
@@ -252,22 +253,23 @@
     async function fetchEventsWithRetry() {
       for (let i = 0; i < proxyUrls.length; i++) {
         try {
-          console.log(`Attempting proxy ${i + 1}: ${proxyUrls[i].substring(0, 50)}...`);
+          console.log(`Attempting proxy ${i + 1}/${proxyUrls.length}...`);
           const response = await fetch(proxyUrls[i], { 
             method: 'GET',
-            timeout: 10000
+            mode: 'cors'
           });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.text();
+          console.log("Successfully fetched calendar data");
           parseAndRenderICS(data);
           updateLastUpdatedTime();
           return;
         } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
+          console.error(`Proxy ${i + 1} failed:`, error.message);
           if (i === proxyUrls.length - 1) {
-            displayError(`Unable to load workshops. Make sure the calendar is set to Public in Google Calendar settings.`);
+            displayError(`Unable to load workshops. Please verify the calendar is set to Public in Google Calendar settings.`);
           }
         }
       }
