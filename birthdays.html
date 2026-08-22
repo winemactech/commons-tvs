@@ -63,6 +63,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
     }
 
     .section-title {
@@ -72,6 +73,7 @@
       margin-bottom: 1rem;
       text-transform: uppercase;
       letter-spacing: 1px;
+      flex-shrink: 0;
     }
 
     .student-scroll-container {
@@ -81,6 +83,7 @@
       flex-direction: column;
       gap: 0.8rem;
       padding-right: 1rem;
+      min-height: 0;
     }
 
     .student-card {
@@ -115,15 +118,16 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
     }
 
     .staff-cards-container {
       flex: 1;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: repeat(2, 1fr);
       gap: 1.5rem;
-      overflow-y: auto;
-      padding-right: 1rem;
+      overflow: hidden;
+      min-height: 0;
     }
 
     .staff-card {
@@ -136,28 +140,30 @@
       align-items: center;
       text-align: center;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      flex-shrink: 0;
+      overflow: hidden;
+      justify-content: center;
     }
 
     .staff-photo {
-      width: 120px;
-      height: 120px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid var(--patriots-red);
       margin-bottom: 1rem;
       background-color: rgba(176, 183, 188, 0.1);
+      flex-shrink: 0;
     }
 
     .staff-name {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--patriots-white);
       margin-bottom: 0.5rem;
     }
 
     .staff-date {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: var(--patriots-silver);
       font-weight: 500;
     }
@@ -181,25 +187,21 @@
     }
 
     /* Scrollbar styling */
-    .student-scroll-container::-webkit-scrollbar,
-    .staff-cards-container::-webkit-scrollbar {
+    .student-scroll-container::-webkit-scrollbar {
       width: 6px;
     }
 
-    .student-scroll-container::-webkit-scrollbar-track,
-    .staff-cards-container::-webkit-scrollbar-track {
+    .student-scroll-container::-webkit-scrollbar-track {
       background: rgba(176, 183, 188, 0.1);
       border-radius: 3px;
     }
 
-    .student-scroll-container::-webkit-scrollbar-thumb,
-    .staff-cards-container::-webkit-scrollbar-thumb {
+    .student-scroll-container::-webkit-scrollbar-thumb {
       background: rgba(198, 12, 48, 0.5);
       border-radius: 3px;
     }
 
-    .student-scroll-container::-webkit-scrollbar-thumb:hover,
-    .staff-cards-container::-webkit-scrollbar-thumb:hover {
+    .student-scroll-container::-webkit-scrollbar-thumb:hover {
       background: rgba(198, 12, 48, 0.7);
     }
 
@@ -211,6 +213,7 @@
       font-size: 0.9rem;
       opacity: 0.7;
       text-align: right;
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -398,7 +401,7 @@
         const formattedDate = formatDateShort(bd.dateObj);
         
         card.innerHTML = `
-          <div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--patriots-red); background-color: rgba(176, 183, 188, 0.3); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--patriots-silver); font-size: 0.9rem;">Photo</div>
+          <div style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--patriots-red); background-color: rgba(176, 183, 188, 0.3); display: flex; align-items: center; justify-content: center; color: var(--patriots-silver); font-size: 0.9rem; flex-shrink: 0;">Photo</div>
           <div class="staff-name">${bd.name}</div>
           <div class="staff-date">Birthday: ${formattedDate}</div>
         `;
