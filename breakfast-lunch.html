@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Win-E-Mac Breakfast & Lunch</title>
+  <style>
+    :root {
+      --patriots-navy: #002244;
+      --patriots-red: #C60C30;
+      --patriots-silver: #B0B7BC;
+      --patriots-white: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--patriots-navy);
+      color: var(--patriots-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 2rem 3rem;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      border-bottom: 3px solid var(--patriots-red);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      height: 80px;
+      width: auto;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .menu-wrapper {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    .menu-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .menu-card-header {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--patriots-red);
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 2px solid var(--patriots-red);
+      padding-bottom: 1rem;
+    }
+
+    .menu-card-date {
+      font-size: 1.2rem;
+      color: var(--patriots-silver);
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    .menu-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .menu-item {
+      font-size: 1.3rem;
+      color: var(--patriots-white);
+      line-height: 1.5;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(176, 183, 188, 0.2);
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .no-menu {
+      font-size: 1.2rem;
+      color: var(--patriots-silver);
+      font-style: italic;
+    }
+
+    .error-message {
+      background-color: rgba(198, 12, 48, 0.3);
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 2rem;
+      font-size: 1.5rem;
+      color: var(--patriots-white);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 2rem;
+      font-size: 1.5rem;
+      color: var(--patriots-white);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(176, 183, 188, 0.2);
+      color: var(--patriots-silver);
+      font-size: 0.9rem;
+      opacity: 0.7;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
+    <h1>Breakfast & Lunch</h1>
+  </header>
+
+  <div class="menu-wrapper" id="menu-container">
+    <div class="loading-message">Loading menu...</div>
+  </div>
+
+  <footer>Last updated: <span id="last-updated">Just now</span></footer>
+
+  <script>
+    // Menu Google Calendar iCal Feed URL (public)
+    const menuCalendarIcalUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
+    
+    // Try direct fetch first, then multiple CORS proxies
+    const proxyUrls = [
+      menuCalendarIcalUrl,
+      `https://corsproxy.io/?${encodeURIComponent(menuCalendarIcalUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(menuCalendarIcalUrl)}`,
+      `https://cors-anywhere.herokuapp.com/${menuCalendarIcalUrl}`
+    ];
+
+    // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
+    function parseICalDate(dateStr) {
+      if (!dateStr) return null;
+      
+      dateStr = dateStr.trim();
+      
+      if (dateStr.includes('T')) {
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        const hour = dateStr.substring(9, 11);
+        const minute = dateStr.substring(11, 13);
+        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
+      } else {
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        return new Date(`${year}-${month}-${day}T00:00:00Z`);
+      }
+    }
+
+    // Get day name from date
+    function getDayName(date) {
+      const options = { weekday: 'long', timeZone: 'America/Chicago' };
+      return date.toLocaleDateString('en-US', options);
+    }
+
+    // Get smart label for next breakfast/lunch
+    function getSmartLabel(daysFromToday) {
+      const today = new Date();
+      const targetDate = new Date(today);
+      targetDate.setDate(targetDate.getDate() + daysFromToday);
+      const dayOfWeek = targetDate.getDay();
+
+      if (daysFromToday === 0) {
+        return "Today";
+      } else if (daysFromToday === 1) {
+        if (dayOfWeek === 1) { // Monday means today was Sunday
+          return "Tomorrow";
+        } else if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday or Saturday
+          return "Tomorrow";
+        } else if (dayOfWeek === 0) { // Sunday - next Monday
+          return "Monday";
+        }
+        return "Tomorrow";
+      } else {
+        return getDayName(targetDate);
+      }
+    }
+
+    // Update last updated timestamp
+    function updateLastUpdatedTime() {
+      const now = new Date();
+      const options = {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'America/Chicago'
+      };
+      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
+    }
+
+    async function fetchMenusWithRetry() {
+      for (let i = 0; i < proxyUrls.length; i++) {
+        try {
+          console.log(`Attempting proxy ${i + 1}/${proxyUrls.length}...`);
+          const response = await fetch(proxyUrls[i], { 
+            method: 'GET',
+            mode: 'cors'
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.text();
+          console.log("Successfully fetched menu calendar data");
+          parseAndRenderMenus(data);
+          updateLastUpdatedTime();
+          return;
+        } catch (error) {
+          console.error(`Proxy ${i + 1} failed:`, error.message);
+          if (i === proxyUrls.length - 1) {
+            displayError(`Unable to load menus. Please verify the calendar is set to Public in Google Calendar settings.`);
+          }
+        }
+      }
+    }
+
+    function displayError(message) {
+      const container = document.getElementById('menu-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function parseAndRenderMenus(icsData) {
+      const container = document.getElementById('menu-container');
+      const events = [];
+      const blocks = icsData.split('BEGIN:VEVENT');
+
+      blocks.slice(1).forEach(block => {
+        const summaryMatch = block.match(/SUMMARY:(.*)/);
+        const descriptionMatch = block.match(/DESCRIPTION:(.*)/);
+        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+
+        if (summaryMatch && dtstartMatch) {
+          const title = summaryMatch[1].trim();
+          const rawDate = dtstartMatch[1].trim();
+          const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+          const dateObj = parseICalDate(rawDate);
+          
+          events.push({ 
+            title, 
+            description,
+            dateObj,
+            timestamp: dateObj ? dateObj.getTime() : 0
+          });
+        }
+      });
+
+      console.log(`Found ${events.length} menu events`);
+
+      // Get today's and tomorrow's dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Find relevant events
+      const todayLunch = events.find(evt => {
+        if (!evt.dateObj) return false;
+        const eventDate = new Date(evt.dateObj);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() === today.getTime() && evt.title.toLowerCase().includes('lunch');
+      });
+
+      const tomorrowBreakfast = events.find(evt => {
+        if (!evt.dateObj) return false;
+        const eventDate = new Date(evt.dateObj);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() === tomorrow.getTime() && evt.title.toLowerCase().includes('breakfast');
+      });
+
+      const tomorrowLunch = events.find(evt => {
+        if (!evt.dateObj) return false;
+        const eventDate = new Date(evt.dateObj);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() === tomorrow.getTime() && evt.title.toLowerCase().includes('lunch');
+      });
+
+      // Get smart labels
+      const breakfastLabel = getSmartLabel(1);
+      const lunchLabel = getSmartLabel(1);
+
+      // Render the menu grid
+      container.innerHTML = `
+        <div class="menu-grid">
+          <div class="menu-card">
+            <div class="menu-card-header">Today's Lunch</div>
+            <div class="menu-card-date">${today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div class="menu-items">
+              ${todayLunch ? renderMenuItems(todayLunch.description) : '<div class="no-menu">No menu available</div>'}
+            </div>
+          </div>
+          
+          <div class="menu-card">
+            <div class="menu-card-header">${breakfastLabel}'s Breakfast</div>
+            <div class="menu-card-date">${tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div class="menu-items">
+              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.description) : '<div class="no-menu">No menu available</div>'}
+            </div>
+          </div>
+          
+          <div class="menu-card">
+            <div class="menu-card-header">${lunchLabel}'s Lunch</div>
+            <div class="menu-card-date">${tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div class="menu-items">
+              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.description) : '<div class="no-menu">No menu available</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMenuItems(description) {
+      if (!description) return '<div class="no-menu">No menu available</div>';
+      
+      // Split by commas or line breaks to separate menu items
+      const items = description
+        .split(/[,\n]/)
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+
+      if (items.length === 0) return '<div class="no-menu">No menu available</div>';
+
+      return items
+        .map(item => `<div class="menu-item">${item}</div>`)
+        .join('');
+    }
+
+    // Initial Fetch
+    fetchMenusWithRetry();
+
+    // Auto-refresh every 15 minutes
+    setInterval(fetchMenusWithRetry, 15 * 60 * 1000);
+  </script>
+</body>
+</html>
