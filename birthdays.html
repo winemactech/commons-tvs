@@ -248,6 +248,9 @@
     // Staff Google Calendar iCal Feed URL (public)
     const staffCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_70b03372ad6bd706e3f3f66c5e0488170f4047fb8e32e451417c632729c816b2%40group.calendar.google.com/public/basic.ics";
     
+    // Google Drive folder ID for staff photos
+    const driveFolder = "1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF";
+    
     // Multiple CORS proxies for fetching the iCal feed
     const calendarProxyUrls = [
       `https://corsproxy.io/?${encodeURIComponent(staffCalendarIcalUrl)}`,
@@ -290,6 +293,18 @@
       };
       
       return dateObj.toLocaleDateString('en-US', options);
+    }
+
+    // Convert name to filename format: "John Smith" -> "John-Smith.JPG"
+    function nameToFilename(name) {
+      return name.replace(/\s+/g, '-') + '.JPG';
+    }
+
+    // Build Google Drive image URL from filename
+    function buildDriveImageUrl(filename) {
+      // Format: https://drive.google.com/uc?export=view&id=FILE_ID
+      // We'll use a direct link format that works for Drive folders
+      return `https://drive.google.com/uc?export=view&id=${driveFolder}`;
     }
 
     // Update last updated timestamp
@@ -399,9 +414,11 @@
         const card = document.createElement('div');
         card.className = 'staff-card';
         const formattedDate = formatDateShort(bd.dateObj);
+        const filename = nameToFilename(bd.name);
+        const imageUrl = buildDriveImageUrl(filename);
         
         card.innerHTML = `
-          <div style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--patriots-white); background-color: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; color: var(--patriots-white); font-size: 2.5rem; font-weight: bold; flex-shrink: 0;">🎂</div>
+          <img src="${imageUrl}" alt="${bd.name}" class="staff-photo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23C60C30%22/%3E%3Ctext x=%2250%22 y=%2270%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22%3E🎂%3C/text%3E%3C/svg%3E'">
           <div class="staff-name">${bd.name}</div>
           <div class="staff-date">Birthday: ${formattedDate}</div>
         `;
