@@ -178,12 +178,17 @@
     // Google Docs export URL (as plain text)
     const googleDocUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
     
-    // CORS proxy for Google Docs
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(googleDocUrl)}`;
+    // Try multiple CORS proxies in order
+    const proxyUrls = [
+      `https://corsproxy.io/?${encodeURIComponent(googleDocUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(googleDocUrl)}`,
+      `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(googleDocUrl)}`
+    ];
 
     let currentSlide = 0;
     let slides = [];
     let slideInterval = null;
+    let currentProxyIndex = 0;
 
     // Update last updated timestamp
     function updateLastUpdatedTime() {
@@ -223,22 +228,31 @@
       }, 2000); // Change slide every 2 seconds
     }
 
-    async function fetchAndDisplayBulletin() {
-      try {
-        console.log("Fetching bulletin from Google Doc...");
-        const response = await fetch(proxyUrl);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    async function fetchAndDisplayBulletinWithRetry() {
+      for (let i = 0; i < proxyUrls.length; i++) {
+        try {
+          console.log(`Attempting to fetch with proxy ${i + 1}/${proxyUrls.length}...`);
+          const response = await fetch(proxyUrls[i], {
+            method: 'GET',
+            timeout: 10000
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const text = await response.text();
+          console.log("Successfully fetched bulletin");
+          currentProxyIndex = i;
+          parseAndRenderBulletin(text);
+          updateLastUpdatedTime();
+          return;
+        } catch (error) {
+          console.error(`Proxy ${i + 1} failed:`, error.message);
+          if (i === proxyUrls.length - 1) {
+            displayError(`Unable to load bulletin. Please verify the Google Doc is set to "Public" sharing.`);
+          }
         }
-        
-        const text = await response.text();
-        console.log("Successfully fetched bulletin");
-        parseAndRenderBulletin(text);
-        updateLastUpdatedTime();
-      } catch (error) {
-        console.error("Error loading bulletin:", error);
-        displayError(`Unable to load bulletin. Make sure the Google Doc is publicly shared. Error: ${error.message}`);
       }
     }
 
@@ -295,10 +309,10 @@
     }
 
     // Initial Fetch
-    fetchAndDisplayBulletin();
+    fetchAndDisplayBulletinWithRetry();
 
     // Auto-refresh every 5 minutes
-    setInterval(fetchAndDisplayBulletin, 5 * 60 * 1000);
+    setInterval(fetchAndDisplayBulletinWithRetry, 5 * 60 * 1000);
   </script>
 </body>
 </html>
