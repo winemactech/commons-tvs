@@ -306,40 +306,40 @@
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // Find relevant events
+      // Find relevant events - now looking for "Lunch" or "Breakfast" in DESCRIPTION
       const todayLunch = events.find(evt => {
         if (!evt.dateObj) return false;
         const eventDate = new Date(evt.dateObj);
         eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === today.getTime() && evt.title.toLowerCase().includes('lunch');
+        return eventDate.getTime() === today.getTime() && evt.description.toLowerCase().includes('lunch');
       });
 
       const tomorrowBreakfast = events.find(evt => {
         if (!evt.dateObj) return false;
         const eventDate = new Date(evt.dateObj);
         eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === tomorrow.getTime() && evt.title.toLowerCase().includes('breakfast');
+        return eventDate.getTime() === tomorrow.getTime() && evt.description.toLowerCase().includes('breakfast');
       });
 
       const tomorrowLunch = events.find(evt => {
         if (!evt.dateObj) return false;
         const eventDate = new Date(evt.dateObj);
         eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === tomorrow.getTime() && evt.title.toLowerCase().includes('lunch');
+        return eventDate.getTime() === tomorrow.getTime() && evt.description.toLowerCase().includes('lunch');
       });
 
       // Get smart labels
       const breakfastLabel = getSmartLabel(1);
       const lunchLabel = getSmartLabel(1);
 
-      // Render the menu grid
+      // Render the menu grid - menu items are now in TITLE
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
             <div class="menu-card-header">Today's Lunch</div>
             <div class="menu-card-date">${today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div class="menu-items">
-              ${todayLunch ? renderMenuItems(todayLunch.description) : '<div class="no-menu">No menu available</div>'}
+              ${todayLunch ? renderMenuItems(todayLunch.title) : '<div class="no-menu">No menu available</div>'}
             </div>
           </div>
           
@@ -347,7 +347,7 @@
             <div class="menu-card-header">${breakfastLabel}'s Breakfast</div>
             <div class="menu-card-date">${tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div class="menu-items">
-              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.description) : '<div class="no-menu">No menu available</div>'}
+              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.title) : '<div class="no-menu">No menu available</div>'}
             </div>
           </div>
           
@@ -355,7 +355,7 @@
             <div class="menu-card-header">${lunchLabel}'s Lunch</div>
             <div class="menu-card-date">${tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div class="menu-items">
-              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.description) : '<div class="no-menu">No menu available</div>'}
+              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.title) : '<div class="no-menu">No menu available</div>'}
             </div>
           </div>
         </div>
