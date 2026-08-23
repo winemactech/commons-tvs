@@ -266,13 +266,15 @@
       container.innerHTML = '';
       slides = [];
 
-      // Split by double line breaks or multiple newlines to separate announcements
+      // Split by single or multiple blank lines to separate announcements
+      // This regex splits on one or more newlines with optional whitespace
       const announcements = docText
-        .split(/\n\s*\n+/)
+        .split(/\n\n+/)
         .map(announcement => announcement.trim())
         .filter(announcement => announcement.length > 0);
 
       console.log(`Found ${announcements.length} announcements`);
+      console.log("Announcements:", announcements);
 
       if (announcements.length === 0) {
         displayError('No announcements found in the bulletin.');
