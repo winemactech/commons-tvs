@@ -253,12 +253,12 @@
     let studentScrollInterval = null;
     let studentScrollDelay = null;
 
-    // Generate GitHub image URL from staff name
+    // Generate GitHub image URL from staff name (lowercase)
     function generateGithubImageUrl(staffName) {
       if (!staffName) return '';
       
-      // Convert "John Smith" to "John-Smith.jpg"
-      const formatted = staffName.trim().replace(/\s+/g, '-') + '.JPG';
+      // Convert "John Smith" to "john-smith.jpg" (lowercase)
+      const formatted = staffName.trim().replace(/\s+/g, '-').toLowerCase() + '.JPG';
       return githubImageBase + formatted;
     }
 
@@ -414,7 +414,7 @@
         const cleanName = name.trim();
         const cleanMMDD = mmdd.trim();
         
-        // Generate GitHub image URL from staff name
+        // Generate GitHub image URL from staff name (lowercase)
         const photoUrl = generateGithubImageUrl(cleanName);
 
         console.log(`Processing: ${cleanName}, ${cleanMMDD}, ${photoUrl}`);
