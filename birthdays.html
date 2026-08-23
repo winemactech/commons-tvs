@@ -245,10 +245,9 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Google Sheets configuration
+    // Google Sheets configuration - using CSV export
     const sheetId = "1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo";
-    const sheetName = "Sheet1";
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
@@ -265,7 +264,6 @@
     function daysUntilBirthday(mmdd) {
       const today = new Date();
       const currentYear = today.getFullYear();
-      const currentMMDD = getTodayMMDD();
       
       // Parse the birthday
       const month = parseInt(mmdd.substring(0, 2));
@@ -324,22 +322,40 @@
       }, 2000);
     }
 
+    // Parse CSV data
+    function parseCSV(csv) {
+      const lines = csv.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      const rows = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const obj = {};
+        const currentLine = lines[i].split(',').map(item => item.trim());
+        
+        for (let j = 0; j < headers.length; j++) {
+          obj[headers[j]] = currentLine[j] || '';
+        }
+        
+        rows.push(obj);
+      }
+      
+      return rows;
+    }
+
     // Fetch and parse Google Sheet data
     async function fetchStaffBirthdays() {
       try {
-        console.log("Fetching Google Sheet data...");
+        console.log("Fetching Google Sheet data from CSV export...");
         const response = await fetch(sheetUrl);
-        const text = await response.text();
+        const csv = await response.text();
         
-        // Parse Google Visualization API response
-        const jsonString = text.substring(47).slice(0, -2); // Remove wrapper
-        const data = JSON.parse(jsonString);
-        
-        parseAndRenderStaffBirthdays(data);
+        console.log("Successfully fetched CSV data");
+        const rows = parseCSV(csv);
+        parseAndRenderStaffBirthdays(rows);
         return;
       } catch (error) {
         console.error("Error fetching sheet:", error);
-        displayStaffError(`Unable to load staff birthdays. Make sure the Google Sheet is shared publicly.`);
+        displayStaffError(`Unable to load staff birthdays. Check console for details.`);
       }
     }
 
@@ -348,32 +364,37 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function parseAndRenderStaffBirthdays(data) {
+    function parseAndRenderStaffBirthdays(rows) {
       const container = document.getElementById('staff-container');
       container.innerHTML = '';
 
-      if (!data.rows || data.rows.length === 0) {
+      if (!rows || rows.length === 0) {
         container.innerHTML = '<div class="error-message">No staff birthdays found in sheet.</div>';
         return;
       }
 
       const birthdays = [];
 
-      // Parse rows (skip header row)
-      data.rows.forEach(row => {
-        const name = row.c[0]?.v; // Staff Name
-        const mmdd = row.c[1]?.v; // Birthday MMDD
-        const photoUrl = row.c[2]?.v; // Photo URL
+      // Parse rows
+      rows.forEach(row => {
+        const name = row['Staff Name'] || row['staff name'] || '';
+        const mmdd = row['Staff Birthday (MMDD)'] || row['staff birthday (mmdd)'] || '';
+        const photoUrl = row['Photo URL'] || row['photo url'] || '';
 
-        if (name && mmdd && mmdd.length === 4) {
-          const daysUntil = daysUntilBirthday(mmdd);
+        // Trim quotes if present (CSV sometimes includes them)
+        const cleanName = name.replace(/^"|"$/g, '').trim();
+        const cleanMMDD = mmdd.replace(/^"|"$/g, '').trim();
+        const cleanPhotoUrl = photoUrl.replace(/^"|"$/g, '').trim();
+
+        if (cleanName && cleanMMDD && cleanMMDD.length === 4 && /^\d{4}$/.test(cleanMMDD)) {
+          const daysUntil = daysUntilBirthday(cleanMMDD);
           
           // Only include birthdays in next 30 days
           if (daysUntil >= 0 && daysUntil <= 30) {
             birthdays.push({
-              name,
-              mmdd,
-              photoUrl,
+              name: cleanName,
+              mmdd: cleanMMDD,
+              photoUrl: cleanPhotoUrl,
               daysUntil
             });
           }
