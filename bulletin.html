@@ -56,68 +56,93 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      justify-content: center;
+      align-items: center;
     }
 
-    .bulletin-scroll-container {
+    .slides-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .announcement-slide {
+      position: absolute;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
-      padding-right: 1rem;
-      overflow-y: auto;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(0, 34, 68, 0.95) 0%, rgba(0, 34, 68, 0.98) 100%);
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      opacity: 0;
+      transition: opacity 0.8s ease-in-out;
+      pointer-events: none;
     }
 
-    .announcement-card {
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
-      border-top: 1px solid rgba(176, 183, 188, 0.15);
-      border-right: 1px solid rgba(176, 183, 188, 0.15);
-      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
-      border-radius: 6px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-      flex-shrink: 0;
-      font-size: 1.3rem;
-      line-height: 1.6;
+    .announcement-slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .announcement-slide.prev {
+      opacity: 0;
+      z-index: 5;
+    }
+
+    .slide-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      gap: 2rem;
+    }
+
+    .announcement-text {
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1.3;
       color: var(--patriots-white);
       white-space: pre-wrap;
       word-wrap: break-word;
+      max-width: 90%;
+    }
+
+    .slide-counter {
+      font-size: 1.2rem;
+      color: var(--patriots-silver);
+      font-weight: 500;
+      margin-top: 2rem;
     }
 
     .error-message {
-      background-color: rgba(198, 12, 48, 0.2);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 6px;
-      padding: 1.5rem;
-      font-size: 1.2rem;
+      background-color: rgba(198, 12, 48, 0.3);
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 3rem;
+      font-size: 2rem;
       color: var(--patriots-white);
+      text-align: center;
+      max-width: 80%;
     }
 
     .loading-message {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 6px;
-      padding: 1.5rem;
-      font-size: 1.2rem;
+      border: 3px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: 3rem;
+      font-size: 2rem;
       color: var(--patriots-white);
-    }
-
-    /* Scrollbar styling */
-    .bulletin-scroll-container::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .bulletin-scroll-container::-webkit-scrollbar-track {
-      background: rgba(176, 183, 188, 0.1);
-      border-radius: 3px;
-    }
-
-    .bulletin-scroll-container::-webkit-scrollbar-thumb {
-      background: rgba(198, 12, 48, 0.5);
-      border-radius: 3px;
-    }
-
-    .bulletin-scroll-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(198, 12, 48, 0.7);
+      text-align: center;
     }
 
     footer {
@@ -139,7 +164,7 @@
   </header>
 
   <div class="bulletin-wrapper" id="bulletin-container">
-    <div class="bulletin-scroll-container">
+    <div class="slides-container" id="slides-container">
       <div class="loading-message">Loading announcements...</div>
     </div>
   </div>
@@ -156,8 +181,9 @@
     // CORS proxy for Google Docs
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(googleDocUrl)}`;
 
-    let scrollInterval = null;
-    let scrollDelay = null;
+    let currentSlide = 0;
+    let slides = [];
+    let slideInterval = null;
 
     // Update last updated timestamp
     function updateLastUpdatedTime() {
@@ -171,26 +197,30 @@
       document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
     }
 
-    // Start auto-scroll
-    function startAutoScroll() {
-      const container = document.querySelector('.bulletin-wrapper');
-      const scrollContainer = document.querySelector('.bulletin-scroll-container');
+    // Show a specific slide
+    function showSlide(index) {
+      if (slides.length === 0) return;
       
-      // Clear any existing scroll intervals
-      if (scrollInterval) clearInterval(scrollInterval);
-      if (scrollDelay) clearTimeout(scrollDelay);
+      // Remove active class from all slides
+      document.querySelectorAll('.announcement-slide').forEach(slide => {
+        slide.classList.remove('active', 'prev');
+      });
       
-      // Wait 2 seconds before starting scroll
-      scrollDelay = setTimeout(() => {
-        scrollInterval = setInterval(() => {
-          container.scrollTop += 1;
-          
-          // If we've scrolled to the bottom, reset to top
-          if (container.scrollTop >= scrollContainer.scrollHeight - container.clientHeight) {
-            container.scrollTop = 0;
-          }
-        }, 50);
-      }, 2000);
+      // Add active class to current slide
+      currentSlide = index % slides.length;
+      if (slides[currentSlide]) {
+        slides[currentSlide].classList.add('active');
+      }
+    }
+
+    // Auto-advance slides
+    function startSlideshow() {
+      if (slideInterval) clearInterval(slideInterval);
+      
+      slideInterval = setInterval(() => {
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+      }, 2000); // Change slide every 2 seconds
     }
 
     async function fetchAndDisplayBulletin() {
@@ -213,13 +243,14 @@
     }
 
     function displayError(message) {
-      const container = document.querySelector('.bulletin-scroll-container');
+      const container = document.getElementById('slides-container');
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
     function parseAndRenderBulletin(docText) {
-      const container = document.querySelector('.bulletin-scroll-container');
+      const container = document.getElementById('slides-container');
       container.innerHTML = '';
+      slides = [];
 
       // Split by double line breaks or multiple newlines to separate announcements
       const announcements = docText
@@ -230,20 +261,37 @@
       console.log(`Found ${announcements.length} announcements`);
 
       if (announcements.length === 0) {
-        container.innerHTML = '<div class="error-message">No announcements found in the bulletin.</div>';
+        displayError('No announcements found in the bulletin.');
         return;
       }
 
-      // Display each announcement as a card
+      // Create slide for each announcement
       announcements.forEach((announcement, index) => {
-        const card = document.createElement('div');
-        card.className = 'announcement-card';
-        card.textContent = announcement;
-        container.appendChild(card);
+        const slide = document.createElement('div');
+        slide.className = 'announcement-slide';
+        if (index === 0) slide.classList.add('active');
+        
+        const slideContent = document.createElement('div');
+        slideContent.className = 'slide-content';
+        
+        const announcementText = document.createElement('div');
+        announcementText.className = 'announcement-text';
+        announcementText.textContent = announcement;
+        
+        const counter = document.createElement('div');
+        counter.className = 'slide-counter';
+        counter.textContent = `${index + 1} of ${announcements.length}`;
+        
+        slideContent.appendChild(announcementText);
+        slideContent.appendChild(counter);
+        slide.appendChild(slideContent);
+        container.appendChild(slide);
+        
+        slides.push(slide);
       });
 
-      // Start auto-scroll after rendering
-      startAutoScroll();
+      // Start the slideshow
+      startSlideshow();
     }
 
     // Initial Fetch
