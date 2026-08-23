@@ -266,9 +266,9 @@
       container.innerHTML = '';
       slides = [];
 
-      // Split by single or multiple blank lines to separate announcements
-      // This regex splits on one or more newlines with optional whitespace
-      const announcements = docText
+      // Normalize line endings: replace \r\n with \n, then split by double newlines
+      const normalizedText = docText.replace(/\r\n/g, '\n');
+      const announcements = normalizedText
         .split(/\n\n+/)
         .map(announcement => announcement.trim())
         .filter(announcement => announcement.length > 0);
