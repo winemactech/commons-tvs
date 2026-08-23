@@ -75,6 +75,7 @@
       flex-direction: column;
       justify-content: flex-start;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      overflow-y: auto;
     }
 
     .menu-card-header {
@@ -86,6 +87,7 @@
       letter-spacing: 1px;
       border-bottom: 2px solid var(--patriots-white);
       padding-bottom: 1rem;
+      flex-shrink: 0;
     }
 
     .menu-card-date {
@@ -93,12 +95,14 @@
       color: rgba(255, 255, 255, 0.8);
       margin-bottom: 1rem;
       font-weight: 500;
+      flex-shrink: 0;
     }
 
     .menu-items {
       display: flex;
       flex-direction: column;
       gap: 0.8rem;
+      flex: 1;
     }
 
     .menu-item {
@@ -153,6 +157,7 @@
       font-size: 0.9rem;
       opacity: 0.7;
       text-align: right;
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -170,65 +175,55 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Menu Google Calendar iCal Feed URL (public)
-    const menuCalendarIcalUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
-    
-    // Try direct fetch first, then multiple CORS proxies
-    const proxyUrls = [
-      menuCalendarIcalUrl,
-      `https://corsproxy.io/?${encodeURIComponent(menuCalendarIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(menuCalendarIcalUrl)}`,
-      `https://cors-anywhere.herokuapp.com/${menuCalendarIcalUrl}`
-    ];
+    // Google Sheet configuration
+    const sheetId = "1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0";
+    const sheetGid = "1619779826"; // gid for "menus" tab
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${sheetGid}`;
 
-    // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
-    function parseICalDate(dateStr) {
-      if (!dateStr) return null;
+    // Parse CSV data from sheet
+    function parseCSV(csv) {
+      const lines = csv.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      const rows = [];
       
-      dateStr = dateStr.trim();
-      
-      if (dateStr.includes('T')) {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        const hour = dateStr.substring(9, 11);
-        const minute = dateStr.substring(11, 13);
-        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
-      } else {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        return new Date(`${year}-${month}-${day}T00:00:00Z`);
+      for (let i = 1; i < lines.length; i++) {
+        const obj = {};
+        const currentLine = lines[i].split(',');
+        
+        for (let j = 0; j < headers.length; j++) {
+          obj[headers[j]] = (currentLine[j] || '').trim();
+        }
+        
+        rows.push(obj);
       }
+      
+      return rows;
     }
 
-    // Get day name from date
+    // Get today's date formatted
+    function getTodayFormatted() {
+      const today = new Date();
+      return today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    // Get tomorrow's date formatted
+    function getTomorrowFormatted() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    // Get day name (e.g., "Monday", "Tuesday")
     function getDayName(date) {
-      const options = { weekday: 'long', timeZone: 'America/Chicago' };
+      const options = { weekday: 'long' };
       return date.toLocaleDateString('en-US', options);
     }
 
-    // Get smart label for next breakfast/lunch
-    function getSmartLabel(daysFromToday) {
-      const today = new Date();
-      const targetDate = new Date(today);
-      targetDate.setDate(targetDate.getDate() + daysFromToday);
-      const dayOfWeek = targetDate.getDay();
-
-      if (daysFromToday === 0) {
-        return "Today";
-      } else if (daysFromToday === 1) {
-        if (dayOfWeek === 1) { // Monday means today was Sunday
-          return "Tomorrow";
-        } else if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday or Saturday
-          return "Tomorrow";
-        } else if (dayOfWeek === 0) { // Sunday - next Monday
-          return "Monday";
-        }
-        return "Tomorrow";
-      } else {
-        return getDayName(targetDate);
-      }
+    // Get tomorrow's day name
+    function getTomorrowDayName() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return getDayName(tomorrow);
     }
 
     // Update last updated timestamp
@@ -243,28 +238,81 @@
       document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
     }
 
-    async function fetchMenusWithRetry() {
-      for (let i = 0; i < proxyUrls.length; i++) {
-        try {
-          console.log(`Attempting proxy ${i + 1}/${proxyUrls.length}...`);
-          const response = await fetch(proxyUrls[i], { 
-            method: 'GET',
-            mode: 'cors'
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.text();
-          console.log("Successfully fetched menu calendar data");
-          parseAndRenderMenus(data);
-          updateLastUpdatedTime();
-          return;
-        } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error.message);
-          if (i === proxyUrls.length - 1) {
-            displayError(`Unable to load menus. Please verify the calendar is set to Public in Google Calendar settings.`);
-          }
+    // Parse menu text to extract meals
+    // Looks for patterns like "Breakfast on Monday will be..." or "Lunch today will be..."
+    function parseMenuText(text) {
+      if (!text) return [];
+
+      const meals = [];
+      
+      // Pattern to match: (Breakfast|Lunch|Breakfast|Dinner) (today|tomorrow|on [DayName]|) will be (.*)
+      const mealRegex = /(Breakfast|Lunch|Dinner)\s+(?:on\s+)?(\w+)?\s+(?:will be|is)\s+(.+?)(?=(?:Breakfast|Lunch|Dinner)|$)/gi;
+      
+      let match;
+      while ((match = mealRegex.exec(text)) !== null) {
+        const mealType = match[1].trim();
+        const dayRef = match[2] ? match[2].trim().toLowerCase() : 'today';
+        let menuItems = match[3].trim();
+        
+        // Remove trailing period if present
+        if (menuItems.endsWith('.')) {
+          menuItems = menuItems.slice(0, -1).trim();
         }
+        
+        // Split menu items by "and" or comma
+        const items = menuItems
+          .split(/\s+and\s+|\s*,\s*/)
+          .map(item => item.trim())
+          .filter(item => item.length > 0);
+        
+        meals.push({
+          mealType,
+          dayRef,
+          items
+        });
+      }
+      
+      return meals;
+    }
+
+    // Normalize day references to match our display days
+    function normalizeDayRef(dayRef, tomorrowDayName) {
+      dayRef = dayRef.toLowerCase();
+      
+      if (dayRef === 'today') {
+        return 'today';
+      } else if (dayRef === 'tomorrow') {
+        return 'tomorrow';
+      } else if (dayRef === tomorrowDayName.toLowerCase()) {
+        return 'tomorrow';
+      }
+      
+      return null; // Day not recognized
+    }
+
+    async function fetchMenus() {
+      try {
+        console.log("Fetching menus from Google Sheet...");
+        const response = await fetch(sheetUrl);
+        const csv = await response.text();
+        
+        console.log("Successfully fetched menu data");
+        const rows = parseCSV(csv);
+        
+        if (rows.length === 0) {
+          displayError("No menu data found in sheet.");
+          return;
+        }
+        
+        // Get the first row with menu text
+        const menuText = rows[0][Object.keys(rows[0])[0]] || '';
+        console.log("Menu text:", menuText);
+        
+        parseAndRenderMenus(menuText);
+        updateLastUpdatedTime();
+      } catch (error) {
+        console.error("Error fetching menus:", error);
+        displayError(`Unable to load menus. Check console for details.`);
       }
     }
 
@@ -273,105 +321,94 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function parseAndRenderMenus(icsData) {
+    function parseAndRenderMenus(menuText) {
       const container = document.getElementById('menu-container');
-      const events = [];
-      const blocks = icsData.split('BEGIN:VEVENT');
+      
+      // Parse the menu text
+      const meals = parseMenuText(menuText);
+      console.log("Parsed meals:", meals);
 
-      blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/SUMMARY:(.*)/);
-        const descriptionMatch = block.match(/DESCRIPTION:(.*)/);
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+      if (meals.length === 0) {
+        container.innerHTML = `
+          <div class="menu-grid">
+            <div class="menu-card">
+              <div class="menu-card-header">Today's Lunch</div>
+              <div class="menu-card-date">${getTodayFormatted()}</div>
+              <div class="menu-items">
+                <div class="no-menu">No menu available</div>
+              </div>
+            </div>
+            <div class="menu-card">
+              <div class="menu-card-header">Tomorrow's Breakfast</div>
+              <div class="menu-card-date">${getTomorrowFormatted()}</div>
+              <div class="menu-items">
+                <div class="no-menu">No menu available</div>
+              </div>
+            </div>
+            <div class="menu-card">
+              <div class="menu-card-header">Tomorrow's Lunch</div>
+              <div class="menu-card-date">${getTomorrowFormatted()}</div>
+              <div class="menu-items">
+                <div class="no-menu">No menu available</div>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
 
-        if (summaryMatch && dtstartMatch) {
-          const title = summaryMatch[1].trim();
-          const rawDate = dtstartMatch[1].trim();
-          const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-          const dateObj = parseICalDate(rawDate);
-          
-          events.push({ 
-            title, 
-            description,
-            dateObj,
-            timestamp: dateObj ? dateObj.getTime() : 0
-          });
-        }
-      });
+      const tomorrowDayName = getTomorrowDayName();
 
-      console.log(`Found ${events.length} menu events`);
+      // Find relevant meals
+      const todayLunch = meals.find(m => 
+        m.mealType.toLowerCase() === 'lunch' && 
+        normalizeDayRef(m.dayRef, tomorrowDayName) === 'today'
+      );
 
-      // Get today's and tomorrow's dates
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowBreakfast = meals.find(m => 
+        m.mealType.toLowerCase() === 'breakfast' && 
+        normalizeDayRef(m.dayRef, tomorrowDayName) === 'tomorrow'
+      );
 
-      // Find relevant events - now looking for "Lunch" or "Breakfast" in DESCRIPTION
-      const todayLunch = events.find(evt => {
-        if (!evt.dateObj) return false;
-        const eventDate = new Date(evt.dateObj);
-        eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === today.getTime() && evt.description.toLowerCase().includes('lunch');
-      });
+      const tomorrowLunch = meals.find(m => 
+        m.mealType.toLowerCase() === 'lunch' && 
+        normalizeDayRef(m.dayRef, tomorrowDayName) === 'tomorrow'
+      );
 
-      const tomorrowBreakfast = events.find(evt => {
-        if (!evt.dateObj) return false;
-        const eventDate = new Date(evt.dateObj);
-        eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === tomorrow.getTime() && evt.description.toLowerCase().includes('breakfast');
-      });
-
-      const tomorrowLunch = events.find(evt => {
-        if (!evt.dateObj) return false;
-        const eventDate = new Date(evt.dateObj);
-        eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === tomorrow.getTime() && evt.description.toLowerCase().includes('lunch');
-      });
-
-      // Get smart labels
-      const breakfastLabel = getSmartLabel(1);
-      const lunchLabel = getSmartLabel(1);
-
-      // Render the menu grid - menu items are now in TITLE
+      // Render the menu grid
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
             <div class="menu-card-header">Today's Lunch</div>
-            <div class="menu-card-date">${today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div class="menu-card-date">${getTodayFormatted()}</div>
             <div class="menu-items">
-              ${todayLunch ? renderMenuItems(todayLunch.title) : '<div class="no-menu">No menu available</div>'}
+              ${todayLunch ? renderMenuItems(todayLunch.items) : '<div class="no-menu">No menu available</div>'}
             </div>
           </div>
           
           <div class="menu-card">
-            <div class="menu-card-header">${breakfastLabel}'s Breakfast</div>
-            <div class="menu-card-date">${tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div class="menu-card-header">Tomorrow's Breakfast</div>
+            <div class="menu-card-date">${getTomorrowFormatted()}</div>
             <div class="menu-items">
-              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.title) : '<div class="no-menu">No menu available</div>'}
+              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.items) : '<div class="no-menu">No menu available</div>'}
             </div>
           </div>
           
           <div class="menu-card">
-            <div class="menu-card-header">${lunchLabel}'s Lunch</div>
-            <div class="menu-card-date">${tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div class="menu-card-header">Tomorrow's Lunch</div>
+            <div class="menu-card-date">${getTomorrowFormatted()}</div>
             <div class="menu-items">
-              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.title) : '<div class="no-menu">No menu available</div>'}
+              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.items) : '<div class="no-menu">No menu available</div>'}
             </div>
           </div>
         </div>
       `;
     }
 
-    function renderMenuItems(description) {
-      if (!description) return '<div class="no-menu">No menu available</div>';
-      
-      // Split by commas or line breaks to separate menu items
-      const items = description
-        .split(/[,\n]/)
-        .map(item => item.trim())
-        .filter(item => item.length > 0);
-
-      if (items.length === 0) return '<div class="no-menu">No menu available</div>';
+    function renderMenuItems(items) {
+      if (!items || items.length === 0) {
+        return '<div class="no-menu">No menu available</div>';
+      }
 
       return items
         .map(item => `<div class="menu-item">${item}</div>`)
@@ -379,10 +416,10 @@
     }
 
     // Initial Fetch
-    fetchMenusWithRetry();
+    fetchMenus();
 
     // Auto-refresh every 15 minutes
-    setInterval(fetchMenusWithRetry, 15 * 60 * 1000);
+    setInterval(fetchMenus, 15 * 60 * 1000);
   </script>
 </body>
 </html>
