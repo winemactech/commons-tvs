@@ -108,6 +108,14 @@
       color: var(--patriots-white);
     }
 
+    .student-name.elanor-hanson {
+      color: #E6D9F5;
+    }
+
+    .student-name.james-hanson {
+      color: #D9F5E6;
+    }
+
     .student-date {
       font-size: 1rem;
       color: var(--patriots-silver);
@@ -262,6 +270,12 @@
     const studentSheetUrl = `https://docs.google.com/spreadsheets/d/${studentSheetId}/export?format=csv&gid=0`;
     
     const githubImageBase = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/images/staff/";
+
+    // Special student name colors (Easter egg for dad!)
+    const specialNameColors = {
+      "Elanor Hanson": "elanor-hanson",   // light purple
+      "James Hanson": "james-hanson"      // light green
+    };
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
@@ -475,11 +489,29 @@
         card.className = 'student-card';
         const formattedDate = formatMMDDToDate(bd.mmdd);
         
-        card.innerHTML = `
-          <div class="student-name">${bd.name}</div>
-          <div class="student-date">${formattedDate}</div>
-          <div class="student-age">Turning ${bd.age}</div>
-        `;
+        const nameElement = document.createElement('div');
+        nameElement.className = 'student-name';
+        
+        // Check if this student has a special color
+        const specialColorClass = specialNameColors[bd.name];
+        if (specialColorClass) {
+          nameElement.classList.add(specialColorClass);
+        }
+        
+        nameElement.textContent = bd.name;
+        
+        const dateElement = document.createElement('div');
+        dateElement.className = 'student-date';
+        dateElement.textContent = formattedDate;
+        
+        const ageElement = document.createElement('div');
+        ageElement.className = 'student-age';
+        ageElement.textContent = `Turning ${bd.age}`;
+        
+        card.appendChild(nameElement);
+        card.appendChild(dateElement);
+        card.appendChild(ageElement);
+        
         container.appendChild(card);
       });
 
