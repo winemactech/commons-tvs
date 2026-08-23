@@ -64,6 +64,8 @@
       gap: 1rem;
       padding-right: 1rem;
       overflow-y: auto;
+      flex: 1;
+      min-height: 0;
     }
 
     .event-card {
@@ -157,7 +159,7 @@
   </header>
 
   <div class="events-wrapper" id="events-container">
-    <div class="events-scroll-container">
+    <div class="events-scroll-container" id="events-scroll-container">
       <div class="loading-message">Loading workshops...</div>
     </div>
   </div>
@@ -230,21 +232,23 @@
 
     // Start auto-scroll
     function startAutoScroll() {
-      const container = document.querySelector('.events-wrapper');
-      const scrollContainer = document.querySelector('.events-scroll-container');
+      const scrollContainer = document.getElementById('events-scroll-container');
       
       // Clear any existing scroll intervals
       if (scrollInterval) clearInterval(scrollInterval);
       if (scrollDelay) clearTimeout(scrollDelay);
       
+      console.log("Starting auto-scroll in 2 seconds...");
+      
       // Wait 2 seconds before starting scroll
       scrollDelay = setTimeout(() => {
+        console.log("Auto-scroll initiated");
         scrollInterval = setInterval(() => {
-          container.scrollTop += 1;
+          scrollContainer.scrollTop += 1;
           
           // If we've scrolled to the bottom, reset to top
-          if (container.scrollTop >= scrollContainer.scrollHeight - container.clientHeight) {
-            container.scrollTop = 0;
+          if (scrollContainer.scrollTop >= scrollContainer.scrollHeight - scrollContainer.clientHeight) {
+            scrollContainer.scrollTop = 0;
           }
         }, 50); // Adjust speed here (lower = faster)
       }, 2000); // 2 second delay before starting
@@ -276,12 +280,12 @@
     }
 
     function displayError(message) {
-      const container = document.getElementById('events-container');
-      container.innerHTML = `<div class="events-scroll-container"><div class="error-message">${message}</div></div>`;
+      const container = document.getElementById('events-scroll-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
     function parseAndRenderICS(icsData) {
-      const container = document.querySelector('.events-scroll-container');
+      const container = document.getElementById('events-scroll-container');
       container.innerHTML = '';
 
       const events = [];
