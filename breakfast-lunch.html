@@ -10,6 +10,7 @@
       --patriots-red: #C60C30;
       --patriots-silver: #B0B7BC;
       --patriots-white: #FFFFFF;
+      --breakfast-blue: #1E5BA8;
     }
 
     * {
@@ -76,6 +77,11 @@
       justify-content: flex-start;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       overflow-y: auto;
+    }
+
+    .menu-card.breakfast {
+      background-color: var(--breakfast-blue);
+      border-color: var(--breakfast-blue);
     }
 
     .menu-card-header {
@@ -324,7 +330,7 @@
                 <div class="no-menu">No menu available</div>
               </div>
             </div>
-            <div class="menu-card">
+            <div class="menu-card breakfast">
               <div class="menu-card-header">Tomorrow's Breakfast</div>
               <div class="menu-card-date">${getTomorrowFormatted()}</div>
               <div class="menu-items">
@@ -372,7 +378,7 @@
             </div>
           </div>
           
-          <div class="menu-card">
+          <div class="menu-card breakfast">
             <div class="menu-card-header">Tomorrow's Breakfast</div>
             <div class="menu-card-date">${getTomorrowFormatted()}</div>
             <div class="menu-items">
