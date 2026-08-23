@@ -177,28 +177,7 @@
   <script>
     // Google Sheet configuration
     const sheetId = "1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0";
-    const sheetGid = "1619779826"; // gid for "menus" tab
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${sheetGid}`;
-
-    // Parse CSV data from sheet
-    function parseCSV(csv) {
-      const lines = csv.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      const rows = [];
-      
-      for (let i = 1; i < lines.length; i++) {
-        const obj = {};
-        const currentLine = lines[i].split(',');
-        
-        for (let j = 0; j < headers.length; j++) {
-          obj[headers[j]] = (currentLine[j] || '').trim();
-        }
-        
-        rows.push(obj);
-      }
-      
-      return rows;
-    }
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=menus`;
 
     // Get today's date formatted
     function getTodayFormatted() {
@@ -245,7 +224,7 @@
 
       const meals = [];
       
-      // Pattern to match: (Breakfast|Lunch|Breakfast|Dinner) (today|tomorrow|on [DayName]|) will be (.*)
+      // Pattern to match: (Breakfast|Lunch|Dinner) (today|tomorrow|on [DayName]|) will be (.*)
       const mealRegex = /(Breakfast|Lunch|Dinner)\s+(?:on\s+)?(\w+)?\s+(?:will be|is)\s+(.+?)(?=(?:Breakfast|Lunch|Dinner)|$)/gi;
       
       let match;
@@ -297,15 +276,22 @@
         const csv = await response.text();
         
         console.log("Successfully fetched menu data");
-        const rows = parseCSV(csv);
+        console.log("Raw CSV:", csv);
         
-        if (rows.length === 0) {
+        // Split by newlines and get first data row
+        const lines = csv.trim().split('\n');
+        if (lines.length === 0) {
           displayError("No menu data found in sheet.");
           return;
         }
         
-        // Get the first row with menu text
-        const menuText = rows[0][Object.keys(rows[0])[0]] || '';
+        // Get first data row (skip if it looks like a header)
+        let menuText = lines[0];
+        if (lines.length > 1 && (lines[0].toLowerCase().includes('menu') || lines[0].toLowerCase().includes('breakfast'))) {
+          menuText = lines[1]; // Use second line if first is header
+        }
+        
+        menuText = menuText.replace(/"/g, ''); // Remove quotes from CSV
         console.log("Menu text:", menuText);
         
         parseAndRenderMenus(menuText);
