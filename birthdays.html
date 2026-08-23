@@ -101,6 +101,12 @@
       flex-shrink: 0;
     }
 
+    .student-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
     .student-name {
       font-size: 1.2rem;
       font-weight: 600;
@@ -111,6 +117,12 @@
       font-size: 1rem;
       color: var(--patriots-silver);
       font-weight: 500;
+    }
+
+    .student-age {
+      font-size: 0.95rem;
+      color: var(--patriots-red);
+      font-weight: 600;
     }
 
     /* RIGHT SIDE - STAFF BIRTHDAYS */
@@ -266,6 +278,32 @@
       return githubImageBase + formatted;
     }
 
+    // Parse date string (MM/DD/YYYY or M/D/YYYY) to get MMDD and calculate age
+    function parseDateString(dateStr) {
+      if (!dateStr) return null;
+      
+      dateStr = dateStr.trim();
+      const parts = dateStr.split('/');
+      
+      if (parts.length !== 3) return null;
+      
+      const month = parseInt(parts[0]);
+      const day = parseInt(parts[1]);
+      const year = parseInt(parts[2]);
+      
+      if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+      
+      // Return MMDD format and birth year
+      const mmdd = String(month).padStart(2, '0') + String(day).padStart(2, '0');
+      return { mmdd, year, month, day };
+    }
+
+    // Calculate age at next birthday
+    function calculateAge(birthYear) {
+      const currentYear = new Date().getFullYear();
+      return currentYear - birthYear;
+    }
+
     // Get today's date in MMDD format
     function getTodayMMDD() {
       const today = new Date();
@@ -396,26 +434,30 @@
       // Parse rows - use exact column names from sheet
       rows.forEach(row => {
         const name = row['Student Name'] || '';
-        const mmdd = row['Student Birthday'] || '';
+        const birthDate = row['Student Birth Date'] || '';
 
         const cleanName = name.trim();
-        const cleanMMDD = mmdd.trim();
+        const dateInfo = parseDateString(birthDate);
 
-        console.log(`Processing: ${cleanName}, ${cleanMMDD}`);
+        if (!dateInfo) {
+          console.log(`Skipping ${cleanName}: invalid birth date format (use MM/DD/YYYY)`);
+          return;
+        }
 
-        if (cleanName && cleanMMDD && cleanMMDD.length === 4 && /^\d{4}$/.test(cleanMMDD)) {
-          const daysUntil = daysUntilBirthday(cleanMMDD);
-          
-          console.log(`${cleanName} birthday: ${cleanMMDD}, days until: ${daysUntil}`);
-          
-          // Include all upcoming birthdays (no 30-day limit for students)
-          if (daysUntil >= 0) {
-            birthdays.push({
-              name: cleanName,
-              mmdd: cleanMMDD,
-              daysUntil
-            });
-          }
+        const { mmdd, year } = dateInfo;
+        const daysUntil = daysUntilBirthday(mmdd);
+        const age = calculateAge(year);
+
+        console.log(`Processing: ${cleanName}, DOB: ${birthDate}, Age turning: ${age}, Days until: ${daysUntil}`);
+
+        // Include all upcoming birthdays
+        if (daysUntil >= 0) {
+          birthdays.push({
+            name: cleanName,
+            mmdd: mmdd,
+            age: age,
+            daysUntil
+          });
         }
       });
 
@@ -437,8 +479,11 @@
         const formattedDate = formatMMDDToDate(bd.mmdd);
         
         card.innerHTML = `
-          <div class="student-name">${bd.name}</div>
-          <div class="student-date">${formattedDate}</div>
+          <div class="student-info">
+            <div class="student-name">${bd.name}</div>
+            <div class="student-date">${formattedDate}</div>
+          </div>
+          <div class="student-age">Turning ${bd.age}</div>
         `;
         container.appendChild(card);
       });
