@@ -330,10 +330,10 @@
       
       for (let i = 1; i < lines.length; i++) {
         const obj = {};
-        const currentLine = lines[i].split(',').map(item => item.trim());
+        const currentLine = lines[i].split(',');
         
         for (let j = 0; j < headers.length; j++) {
-          obj[headers[j]] = currentLine[j] || '';
+          obj[headers[j]] = (currentLine[j] || '').trim();
         }
         
         rows.push(obj);
@@ -351,6 +351,7 @@
         
         console.log("Successfully fetched CSV data");
         const rows = parseCSV(csv);
+        console.log("Parsed rows:", rows);
         parseAndRenderStaffBirthdays(rows);
         return;
       } catch (error) {
@@ -375,19 +376,22 @@
 
       const birthdays = [];
 
-      // Parse rows
+      // Parse rows - use exact column names from sheet
       rows.forEach(row => {
-        const name = row['Staff Name'] || row['staff name'] || '';
-        const mmdd = row['Staff Birthday (MMDD)'] || row['staff birthday (mmdd)'] || '';
-        const photoUrl = row['Photo URL'] || row['photo url'] || '';
+        const name = row['Staff Name'] || '';
+        const mmdd = row['Staff Birthday'] || '';
+        const photoUrl = row['Staff Picture'] || '';
 
-        // Trim quotes if present (CSV sometimes includes them)
-        const cleanName = name.replace(/^"|"$/g, '').trim();
-        const cleanMMDD = mmdd.replace(/^"|"$/g, '').trim();
-        const cleanPhotoUrl = photoUrl.replace(/^"|"$/g, '').trim();
+        const cleanName = name.trim();
+        const cleanMMDD = mmdd.trim();
+        const cleanPhotoUrl = photoUrl.trim();
+
+        console.log(`Processing: ${cleanName}, ${cleanMMDD}, ${cleanPhotoUrl}`);
 
         if (cleanName && cleanMMDD && cleanMMDD.length === 4 && /^\d{4}$/.test(cleanMMDD)) {
           const daysUntil = daysUntilBirthday(cleanMMDD);
+          
+          console.log(`${cleanName} birthday: ${cleanMMDD}, days until: ${daysUntil}`);
           
           // Only include birthdays in next 30 days
           if (daysUntil >= 0 && daysUntil <= 30) {
