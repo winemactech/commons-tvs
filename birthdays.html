@@ -94,21 +94,16 @@
       border-bottom: 1px solid rgba(176, 183, 188, 0.15);
       border-radius: 6px;
       padding: 1rem 1.25rem;
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 0.8fr;
+      gap: 1.5rem;
       align-items: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       flex-shrink: 0;
     }
 
-    .student-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
     .student-name {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--patriots-white);
     }
@@ -117,12 +112,14 @@
       font-size: 1rem;
       color: var(--patriots-silver);
       font-weight: 500;
+      text-align: center;
     }
 
     .student-age {
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       color: var(--patriots-red);
-      font-weight: 600;
+      font-weight: 700;
+      text-align: center;
     }
 
     /* RIGHT SIDE - STAFF BIRTHDAYS */
@@ -479,10 +476,8 @@
         const formattedDate = formatMMDDToDate(bd.mmdd);
         
         card.innerHTML = `
-          <div class="student-info">
-            <div class="student-name">${bd.name}</div>
-            <div class="student-date">${formattedDate}</div>
-          </div>
+          <div class="student-name">${bd.name}</div>
+          <div class="student-date">${formattedDate}</div>
           <div class="student-age">Turning ${bd.age}</div>
         `;
         container.appendChild(card);
