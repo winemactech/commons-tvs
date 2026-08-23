@@ -246,8 +246,12 @@
 
   <script>
     // Google Sheets configuration - using CSV export
-    const sheetId = "1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo";
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+    const staffSheetId = "1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo";
+    const staffSheetUrl = `https://docs.google.com/spreadsheets/d/${staffSheetId}/export?format=csv&gid=0`;
+    
+    const studentSheetId = "1wH7lhd_pg9jjdSwrOOZmeiFGT5lDqdJXZWhbbYPPsTI";
+    const studentSheetUrl = `https://docs.google.com/spreadsheets/d/${studentSheetId}/export?format=csv&gid=0`;
+    
     const githubImageBase = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/images/staff/";
 
     let studentScrollInterval = null;
@@ -260,26 +264,6 @@
       // Convert "John Smith" to "john-smith.jpg" (lowercase)
       const formatted = staffName.trim().replace(/\s+/g, '-').toLowerCase() + '.JPG';
       return githubImageBase + formatted;
-    }
-
-    // Convert Google Drive share links to direct image URLs (fallback)
-    function convertGoogleDriveUrl(url) {
-      if (!url) return '';
-      
-      // If it's a Google Drive URL, extract file ID
-      const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        return `https://drive.google.com/uc?export=view&id=${fileId}`;
-      }
-      
-      // If already in the correct format, return as-is
-      if (url.includes('drive.google.com/uc?export=view')) {
-        return url;
-      }
-      
-      // Otherwise return the original URL
-      return url;
     }
 
     // Get today's date in MMDD format
@@ -336,17 +320,19 @@
     // Start auto-scroll for student birthdays
     function startStudentScroll() {
       const container = document.getElementById('student-container');
-      const scrollContainer = container.parentElement;
       
       if (studentScrollInterval) clearInterval(studentScrollInterval);
       if (studentScrollDelay) clearTimeout(studentScrollDelay);
       
+      console.log("Starting student birthdays auto-scroll in 2 seconds...");
+      
       studentScrollDelay = setTimeout(() => {
+        console.log("Student birthdays auto-scroll initiated");
         studentScrollInterval = setInterval(() => {
-          scrollContainer.scrollTop += 1;
+          container.scrollTop += 1;
           
-          if (scrollContainer.scrollTop >= container.scrollHeight - scrollContainer.clientHeight) {
-            scrollContainer.scrollTop = 0;
+          if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+            container.scrollTop = 0;
           }
         }, 50);
       }, 2000);
@@ -372,20 +358,109 @@
       return rows;
     }
 
-    // Fetch and parse Google Sheet data
-    async function fetchStaffBirthdays() {
+    // Fetch and parse student birthdays
+    async function fetchStudentBirthdays() {
       try {
-        console.log("Fetching Google Sheet data from CSV export...");
-        const response = await fetch(sheetUrl);
+        console.log("Fetching student birthdays from Google Sheet...");
+        const response = await fetch(studentSheetUrl);
         const csv = await response.text();
         
-        console.log("Successfully fetched CSV data");
+        console.log("Successfully fetched student CSV data");
         const rows = parseCSV(csv);
-        console.log("Parsed rows:", rows);
+        console.log("Parsed student rows:", rows);
+        parseAndRenderStudentBirthdays(rows);
+        return;
+      } catch (error) {
+        console.error("Error fetching student sheet:", error);
+        displayStudentError(`Unable to load student birthdays. Check console for details.`);
+      }
+    }
+
+    function displayStudentError(message) {
+      const container = document.getElementById('student-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function parseAndRenderStudentBirthdays(rows) {
+      const container = document.getElementById('student-container');
+      container.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        container.innerHTML = '<div class="loading-message">Student birthdays spreadsheet is empty - checking again soon...</div>';
+        startStudentScroll();
+        return;
+      }
+
+      const birthdays = [];
+
+      // Parse rows - use exact column names from sheet
+      rows.forEach(row => {
+        const name = row['Student Name'] || '';
+        const mmdd = row['Student Birthday'] || '';
+
+        const cleanName = name.trim();
+        const cleanMMDD = mmdd.trim();
+
+        console.log(`Processing: ${cleanName}, ${cleanMMDD}`);
+
+        if (cleanName && cleanMMDD && cleanMMDD.length === 4 && /^\d{4}$/.test(cleanMMDD)) {
+          const daysUntil = daysUntilBirthday(cleanMMDD);
+          
+          console.log(`${cleanName} birthday: ${cleanMMDD}, days until: ${daysUntil}`);
+          
+          // Include all upcoming birthdays (no 30-day limit for students)
+          if (daysUntil >= 0) {
+            birthdays.push({
+              name: cleanName,
+              mmdd: cleanMMDD,
+              daysUntil
+            });
+          }
+        }
+      });
+
+      // Sort by days until birthday
+      birthdays.sort((a, b) => a.daysUntil - b.daysUntil);
+
+      console.log(`Found ${birthdays.length} upcoming student birthdays`);
+
+      if (birthdays.length === 0) {
+        container.innerHTML = '<div class="loading-message">No upcoming student birthdays - check back soon!</div>';
+        startStudentScroll();
+        return;
+      }
+
+      // Show all upcoming student birthdays
+      birthdays.forEach(bd => {
+        const card = document.createElement('div');
+        card.className = 'student-card';
+        const formattedDate = formatMMDDToDate(bd.mmdd);
+        
+        card.innerHTML = `
+          <div class="student-name">${bd.name}</div>
+          <div class="student-date">${formattedDate}</div>
+        `;
+        container.appendChild(card);
+      });
+
+      // Start auto-scroll after rendering
+      startStudentScroll();
+    }
+
+    // Fetch and parse staff birthdays
+    async function fetchStaffBirthdays() {
+      try {
+        console.log("Fetching staff birthdays from Google Sheet...");
+        const response = await fetch(staffSheetUrl);
+        const csv = await response.text();
+        
+        console.log("Successfully fetched staff CSV data");
+        const rows = parseCSV(csv);
+        console.log("Parsed staff rows:", rows);
         parseAndRenderStaffBirthdays(rows);
         return;
       } catch (error) {
-        console.error("Error fetching sheet:", error);
+        console.error("Error fetching staff sheet:", error);
         displayStaffError(`Unable to load staff birthdays. Check console for details.`);
       }
     }
@@ -439,7 +514,7 @@
       // Sort by days until birthday
       birthdays.sort((a, b) => a.daysUntil - b.daysUntil);
 
-      console.log(`Found ${birthdays.length} upcoming birthdays in next 30 days`);
+      console.log(`Found ${birthdays.length} upcoming staff birthdays in next 30 days`);
 
       if (birthdays.length === 0) {
         container.innerHTML = '<div class="error-message">No upcoming staff birthdays in the next 30 days.</div>';
@@ -461,22 +536,14 @@
       });
     }
 
-    // Placeholder for student birthdays (ready to connect later)
-    function renderStudentBirthdaysPlaceholder() {
-      const container = document.getElementById('student-container');
-      container.innerHTML = `
-        <div class="loading-message">Student birthdays placeholder - ready for connection</div>
-      `;
-      startStudentScroll();
-    }
-
     // Initialize
-    renderStudentBirthdaysPlaceholder();
+    fetchStudentBirthdays();
     fetchStaffBirthdays();
     updateLastUpdatedTime();
 
     // Auto-refresh every 15 minutes
     setInterval(() => {
+      fetchStudentBirthdays();
       fetchStaffBirthdays();
       updateLastUpdatedTime();
     }, 15 * 60 * 1000);
