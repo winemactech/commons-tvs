@@ -247,18 +247,24 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
+    function parseCSVLine(line) {
+      // Properly handle CSV parsing with quoted fields
+      if (line.startsWith('"') && line.endsWith('"')) {
+        // Remove outer quotes and unescape inner quotes (CSV uses "" for escaped quotes)
+        return line.slice(1, -1).replace(/""/g, '"');
+      }
+      return line;
+    }
+
     function parseAndRenderBulletin(csvText) {
       const container = document.getElementById('slides-container');
       container.innerHTML = '';
       slides = [];
 
-      // Parse CSV: split by newlines and remove quotes
+      // Parse CSV: split by newlines
       const lines = csvText.trim().split('\n');
       const announcements = lines
-        .map(line => {
-          // Remove surrounding quotes if present
-          return line.replace(/^"(.*)"$/, '$1').trim();
-        })
+        .map(line => parseCSVLine(line.trim()))
         .filter(line => line.length > 0); // Remove empty lines
 
       console.log(`Found ${announcements.length} announcements`);
