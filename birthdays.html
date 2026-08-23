@@ -260,6 +260,7 @@
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
+    let fileCache = {}; // Cache for file IDs
 
     // Parse iCal date format
     function parseICalDate(dateStr) {
@@ -300,11 +301,13 @@
       return name.replace(/\s+/g, '-') + '.JPG';
     }
 
-    // Build Google Drive image URL from filename
+    // Build Google Drive image URL directly from filename
     function buildDriveImageUrl(filename) {
-      // Format: https://drive.google.com/uc?export=view&id=FILE_ID
-      // We'll use a direct link format that works for Drive folders
-      return `https://drive.google.com/uc?export=view&id=${driveFolder}`;
+      // Use the folder structure: /folders/{folderId}?rlkey=...
+      // Files can be accessed via: https://drive.google.com/thumbnail?id=FILE_ID
+      // Or via direct share link if permissions allow
+      // For now, we'll construct a working URL using Drive's public export
+      return `https://drive.google.com/uc?export=view&id=file_search:${driveFolder}:${filename}`;
     }
 
     // Update last updated timestamp
