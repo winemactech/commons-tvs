@@ -252,6 +252,27 @@
     let studentScrollInterval = null;
     let studentScrollDelay = null;
 
+    // Convert Google Drive share links to direct image URLs
+    function convertGoogleDriveUrl(url) {
+      if (!url) return '';
+      
+      // Extract file ID from various Google Drive URL formats
+      const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        // Return direct export URL
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+      
+      // If already in the correct format, return as-is
+      if (url.includes('drive.google.com/uc?export=view')) {
+        return url;
+      }
+      
+      // Otherwise return the original URL
+      return url;
+    }
+
     // Get today's date in MMDD format
     function getTodayMMDD() {
       const today = new Date();
@@ -380,11 +401,11 @@
       rows.forEach(row => {
         const name = row['Staff Name'] || '';
         const mmdd = row['Staff Birthday'] || '';
-        const photoUrl = row['Staff Picture'] || '';
+        const photoUrlRaw = row['Staff Picture'] || '';
 
         const cleanName = name.trim();
         const cleanMMDD = mmdd.trim();
-        const cleanPhotoUrl = photoUrl.trim();
+        const cleanPhotoUrl = convertGoogleDriveUrl(photoUrlRaw.trim());
 
         console.log(`Processing: ${cleanName}, ${cleanMMDD}, ${cleanPhotoUrl}`);
 
