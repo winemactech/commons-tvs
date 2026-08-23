@@ -248,19 +248,28 @@
     // Google Sheets configuration - using CSV export
     const sheetId = "1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+    const githubImageBase = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/images/staff/";
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
 
-    // Convert Google Drive share links to direct image URLs
+    // Generate GitHub image URL from staff name
+    function generateGithubImageUrl(staffName) {
+      if (!staffName) return '';
+      
+      // Convert "John Smith" to "John-Smith.jpg"
+      const formatted = staffName.trim().replace(/\s+/g, '-') + '.JPG';
+      return githubImageBase + formatted;
+    }
+
+    // Convert Google Drive share links to direct image URLs (fallback)
     function convertGoogleDriveUrl(url) {
       if (!url) return '';
       
-      // Extract file ID from various Google Drive URL formats
+      // If it's a Google Drive URL, extract file ID
       const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1];
-        // Return direct export URL
         return `https://drive.google.com/uc?export=view&id=${fileId}`;
       }
       
@@ -401,13 +410,14 @@
       rows.forEach(row => {
         const name = row['Staff Name'] || '';
         const mmdd = row['Staff Birthday'] || '';
-        const photoUrlRaw = row['Staff Picture'] || '';
 
         const cleanName = name.trim();
         const cleanMMDD = mmdd.trim();
-        const cleanPhotoUrl = convertGoogleDriveUrl(photoUrlRaw.trim());
+        
+        // Generate GitHub image URL from staff name
+        const photoUrl = generateGithubImageUrl(cleanName);
 
-        console.log(`Processing: ${cleanName}, ${cleanMMDD}, ${cleanPhotoUrl}`);
+        console.log(`Processing: ${cleanName}, ${cleanMMDD}, ${photoUrl}`);
 
         if (cleanName && cleanMMDD && cleanMMDD.length === 4 && /^\d{4}$/.test(cleanMMDD)) {
           const daysUntil = daysUntilBirthday(cleanMMDD);
@@ -419,7 +429,7 @@
             birthdays.push({
               name: cleanName,
               mmdd: cleanMMDD,
-              photoUrl: cleanPhotoUrl,
+              photoUrl: photoUrl,
               daysUntil
             });
           }
