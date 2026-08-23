@@ -245,69 +245,52 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Staff Google Calendar iCal Feed URL (public)
-    const staffCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_70b03372ad6bd706e3f3f66c5e0488170f4047fb8e32e451417c632729c816b2%40group.calendar.google.com/public/basic.ics";
-    
-    // Google Drive folder ID for staff photos
-    const driveFolder = "1P1JX7rLJ5OAesLEBvCFQQToPR4ZIBHpF";
-    
-    // Multiple CORS proxies for fetching the iCal feed
-    const calendarProxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(staffCalendarIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(staffCalendarIcalUrl)}`,
-      `https://cors-anywhere.herokuapp.com/${staffCalendarIcalUrl}`
-    ];
+    // Google Sheets configuration
+    const sheetId = "1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo";
+    const sheetName = "Sheet1";
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
-    let fileCache = {}; // Cache for file IDs
 
-    // Parse iCal date format
-    function parseICalDate(dateStr) {
-      if (!dateStr) return null;
+    // Get today's date in MMDD format
+    function getTodayMMDD() {
+      const today = new Date();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return month + day;
+    }
+
+    // Calculate days until birthday (accounting for year wrap)
+    function daysUntilBirthday(mmdd) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMMDD = getTodayMMDD();
       
-      dateStr = dateStr.trim();
+      // Parse the birthday
+      const month = parseInt(mmdd.substring(0, 2));
+      const day = parseInt(mmdd.substring(2, 4));
       
-      if (dateStr.includes('T')) {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        const hour = dateStr.substring(9, 11);
-        const minute = dateStr.substring(11, 13);
-        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
-      } else {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        return new Date(`${year}-${month}-${day}T00:00:00Z`);
+      // Create birthday date for this year
+      let birthdayDate = new Date(currentYear, month - 1, day);
+      
+      // If birthday has passed this year, use next year
+      if (birthdayDate < today) {
+        birthdayDate = new Date(currentYear + 1, month - 1, day);
       }
-    }
-
-    // Format date for display (e.g., "Aug 22")
-    function formatDateShort(dateObj) {
-      if (!dateObj) return "TBD";
       
-      const options = {
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'America/Chicago'
-      };
-      
-      return dateObj.toLocaleDateString('en-US', options);
+      // Calculate days difference
+      const diffTime = birthdayDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
     }
 
-    // Convert name to filename format: "John Smith" -> "John-Smith.JPG"
-    function nameToFilename(name) {
-      return name.replace(/\s+/g, '-') + '.JPG';
-    }
-
-    // Build Google Drive image URL directly from filename
-    function buildDriveImageUrl(filename) {
-      // Use the folder structure: /folders/{folderId}?rlkey=...
-      // Files can be accessed via: https://drive.google.com/thumbnail?id=FILE_ID
-      // Or via direct share link if permissions allow
-      // For now, we'll construct a working URL using Drive's public export
-      return `https://drive.google.com/uc?export=view&id=file_search:${driveFolder}:${filename}`;
+    // Format MMDD to display date
+    function formatMMDDToDate(mmdd) {
+      const month = mmdd.substring(0, 2);
+      const day = mmdd.substring(2, 4);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${months[parseInt(month) - 1]} ${parseInt(day)}`;
     }
 
     // Update last updated timestamp
@@ -341,25 +324,22 @@
       }, 2000);
     }
 
-    // Fetch staff birthdays from Google Calendar with retry logic
-    async function fetchStaffBirthdaysWithRetry() {
-      for (let i = 0; i < calendarProxyUrls.length; i++) {
-        try {
-          console.log(`Attempting proxy ${i + 1}: ${calendarProxyUrls[i].substring(0, 50)}...`);
-          const response = await fetch(calendarProxyUrls[i]);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.text();
-          console.log("Successfully fetched calendar data");
-          parseAndRenderStaffBirthdays(data);
-          return;
-        } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
-          if (i === calendarProxyUrls.length - 1) {
-            displayStaffError(`Unable to load staff birthdays. Make sure the calendar is set to Public in Google Calendar settings.`);
-          }
-        }
+    // Fetch and parse Google Sheet data
+    async function fetchStaffBirthdays() {
+      try {
+        console.log("Fetching Google Sheet data...");
+        const response = await fetch(sheetUrl);
+        const text = await response.text();
+        
+        // Parse Google Visualization API response
+        const jsonString = text.substring(47).slice(0, -2); // Remove wrapper
+        const data = JSON.parse(jsonString);
+        
+        parseAndRenderStaffBirthdays(data);
+        return;
+      } catch (error) {
+        console.error("Error fetching sheet:", error);
+        displayStaffError(`Unable to load staff birthdays. Make sure the Google Sheet is shared publicly.`);
       }
     }
 
@@ -368,60 +348,56 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function parseAndRenderStaffBirthdays(icsData) {
+    function parseAndRenderStaffBirthdays(data) {
       const container = document.getElementById('staff-container');
       container.innerHTML = '';
 
+      if (!data.rows || data.rows.length === 0) {
+        container.innerHTML = '<div class="error-message">No staff birthdays found in sheet.</div>';
+        return;
+      }
+
       const birthdays = [];
-      const blocks = icsData.split('BEGIN:VEVENT');
 
-      blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/SUMMARY:(.*)/);
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+      // Parse rows (skip header row)
+      data.rows.forEach(row => {
+        const name = row.c[0]?.v; // Staff Name
+        const mmdd = row.c[1]?.v; // Birthday MMDD
+        const photoUrl = row.c[2]?.v; // Photo URL
 
-        if (summaryMatch && dtstartMatch) {
-          const title = summaryMatch[1].trim();
-          const rawDate = dtstartMatch[1].trim();
-          const dateObj = parseICalDate(rawDate);
+        if (name && mmdd && mmdd.length === 4) {
+          const daysUntil = daysUntilBirthday(mmdd);
           
-          if (dateObj) {
+          // Only include birthdays in next 30 days
+          if (daysUntil >= 0 && daysUntil <= 30) {
             birthdays.push({
-              name: title,
-              dateObj,
-              timestamp: dateObj.getTime()
+              name,
+              mmdd,
+              photoUrl,
+              daysUntil
             });
           }
         }
       });
 
-      console.log(`Found ${birthdays.length} birthdays`);
+      // Sort by days until birthday
+      birthdays.sort((a, b) => a.daysUntil - b.daysUntil);
 
-      // Sort by date and get upcoming birthdays (next 30 days)
-      const now = new Date();
-      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
-      const upcomingBirthdays = birthdays
-        .filter(bd => bd.dateObj >= now && bd.dateObj <= thirtyDaysFromNow)
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .slice(0, 2); // Show only 2 at a time
+      console.log(`Found ${birthdays.length} upcoming birthdays in next 30 days`);
 
-      console.log(`Found ${upcomingBirthdays.length} upcoming birthdays`);
-
-      if (upcomingBirthdays.length === 0) {
+      if (birthdays.length === 0) {
         container.innerHTML = '<div class="error-message">No upcoming staff birthdays in the next 30 days.</div>';
         return;
       }
 
-      // Render staff birthday cards
-      upcomingBirthdays.forEach(bd => {
+      // Show only first 2 birthdays
+      birthdays.slice(0, 2).forEach(bd => {
         const card = document.createElement('div');
         card.className = 'staff-card';
-        const formattedDate = formatDateShort(bd.dateObj);
-        const filename = nameToFilename(bd.name);
-        const imageUrl = buildDriveImageUrl(filename);
+        const formattedDate = formatMMDDToDate(bd.mmdd);
         
         card.innerHTML = `
-          <img src="${imageUrl}" alt="${bd.name}" class="staff-photo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23C60C30%22/%3E%3Ctext x=%2250%22 y=%2270%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22%3E🎂%3C/text%3E%3C/svg%3E'">
+          <img src="${bd.photoUrl}" alt="${bd.name}" class="staff-photo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23C60C30%22/%3E%3Ctext x=%2250%22 y=%2270%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22%3E🎂%3C/text%3E%3C/svg%3E'">
           <div class="staff-name">${bd.name}</div>
           <div class="staff-date">Birthday: ${formattedDate}</div>
         `;
@@ -440,12 +416,12 @@
 
     // Initialize
     renderStudentBirthdaysPlaceholder();
-    fetchStaffBirthdaysWithRetry();
+    fetchStaffBirthdays();
     updateLastUpdatedTime();
 
     // Auto-refresh every 15 minutes
     setInterval(() => {
-      fetchStaffBirthdaysWithRetry();
+      fetchStaffBirthdays();
       updateLastUpdatedTime();
     }, 15 * 60 * 1000);
   </script>
