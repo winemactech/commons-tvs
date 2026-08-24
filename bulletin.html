@@ -119,19 +119,19 @@
     .bulletin-content {
       width: 100%;
       text-align: center;
-      line-height: 1.35;
-      font-weight: 700;
+      line-height: 1.4;
+      font-weight: 600;
       color: var(--patriots-white);
       white-space: pre-wrap;
       word-break: break-word;
       opacity: 1;
-      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+      transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
       transform: translateY(0);
     }
 
     .bulletin-content.fade-out {
       opacity: 0;
-      transform: translateY(-10px);
+      transform: translateY(-8px);
     }
 
     .pending-notice, .error-notice {
@@ -264,7 +264,6 @@
           const rawCsv = await response.text();
           const parsedRows = parseCSV(rawCsv);
 
-          // Cell A1 (Row 0, Col 0) = Date
           const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
 
           if (isToday(sheetDateStr)) {
@@ -273,7 +272,6 @@
               weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
             });
 
-            // Read ALL non-empty cells in Column B (Col index 1 across every row)
             const extractedItems = [];
             for (let row of parsedRows) {
               if (row[1] && row[1].trim().length > 0) {
@@ -324,11 +322,12 @@
       const viewportEl = document.getElementById('viewport');
       if (!textEl || !viewportEl) return;
 
-      const maxHeight = viewportEl.clientHeight;
-      const maxWidth = viewportEl.clientWidth;
+      // Restrict available bounds to 85% of viewport to prevent crowding
+      const maxHeight = viewportEl.clientHeight * 0.85;
+      const maxWidth = viewportEl.clientWidth * 0.85;
 
-      let minSize = 24;
-      let maxSize = 120;
+      let minSize = 20;
+      let maxSize = 72; // Capped max font size for cleaner presentation
       let optimalSize = minSize;
 
       while (minSize <= maxSize) {
@@ -359,9 +358,11 @@
         if (counterEl) {
           counterEl.textContent = `${currentIndex + 1} of ${itemsList.length}`;
         }
+        
+        // Reset font calculation before fade-in
         fitTextToContainer();
         textEl.classList.remove('fade-out');
-      }, 250);
+      }, 300);
     }
 
     function startRotation() {
