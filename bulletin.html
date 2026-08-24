@@ -28,7 +28,7 @@
     }
 
     body {
-      padding: clamp(1.5rem, 3vh, 3rem);
+      padding: clamp(1rem, 2vh, 2rem);
       display: flex;
       flex-direction: column;
     }
@@ -38,19 +38,19 @@
       align-items: center;
       gap: clamp(1rem, 2vw, 2rem);
       border-bottom: 4px solid var(--patriots-red);
-      padding-bottom: clamp(0.5rem, 1.5vh, 1.25rem);
-      margin-bottom: clamp(1rem, 2vh, 1.5rem);
+      padding-bottom: clamp(0.5rem, 1vh, 1rem);
+      margin-bottom: clamp(0.75rem, 1.5vh, 1.25rem);
       flex-shrink: 0;
     }
 
     .logo {
-      height: clamp(50px, 8vh, 90px);
+      height: clamp(50px, 8vh, 85px);
       width: auto;
       object-fit: contain;
     }
 
     h1 {
-      font-size: clamp(2rem, 4.5vh, 3.5rem);
+      font-size: clamp(2rem, 4vh, 3.2rem);
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -69,7 +69,7 @@
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 10px solid var(--patriots-red);
       border-radius: 16px;
-      padding: clamp(1.25rem, 2.5vh, 2rem) clamp(1.5rem, 3vw, 3rem);
+      padding: clamp(1rem, 2vh, 1.75rem) clamp(1.25rem, 2.5vw, 2.5rem);
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -81,14 +81,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: clamp(0.75rem, 1.5vh, 1.25rem);
+      margin-bottom: clamp(0.5rem, 1vh, 1rem);
       border-bottom: 2px solid rgba(176, 183, 188, 0.25);
-      padding-bottom: clamp(0.5rem, 1vh, 0.75rem);
+      padding-bottom: clamp(0.4rem, 0.8vh, 0.6rem);
       flex-shrink: 0;
     }
 
     .bulletin-date {
-      font-size: clamp(1.4rem, 2.8vh, 2.2rem);
+      font-size: clamp(1.3rem, 2.5vh, 2rem);
       font-weight: 800;
       color: var(--patriots-silver);
       text-transform: uppercase;
@@ -99,9 +99,9 @@
       background-color: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--patriots-silver);
       color: var(--patriots-white);
-      padding: 0.4rem 1.2rem;
+      padding: 0.3rem 1.1rem;
       border-radius: 50px;
-      font-size: clamp(1.1rem, 2.2vh, 1.6rem);
+      font-size: clamp(1rem, 2vh, 1.4rem);
       font-weight: 700;
       letter-spacing: 1px;
     }
@@ -119,26 +119,26 @@
     .bulletin-content {
       width: 100%;
       text-align: center;
-      line-height: 1.3;
+      line-height: 1.18;
       font-weight: 700;
       color: var(--patriots-white);
       white-space: pre-wrap;
       word-break: break-word;
       opacity: 1;
-      transition: opacity 0.35s ease-in-out, transform 0.35s ease-in-out;
+      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
       transform: translateY(0);
     }
 
     .bulletin-content.fade-out {
       opacity: 0;
-      transform: translateY(-8px);
+      transform: translateY(-6px);
     }
 
     .pending-notice, .error-notice {
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 10px solid var(--patriots-silver);
       border-radius: 16px;
-      padding: 3rem;
+      padding: 2.5rem;
       font-size: clamp(2rem, 5vh, 3.5rem);
       font-weight: 700;
       color: var(--patriots-white);
@@ -159,11 +159,11 @@
     }
 
     footer {
-      margin-top: clamp(1rem, 2vh, 1.5rem);
-      padding-top: clamp(0.5rem, 1vh, 0.75rem);
+      margin-top: clamp(0.75rem, 1.5vh, 1.25rem);
+      padding-top: clamp(0.4rem, 0.8vh, 0.6rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.9rem, 1.5vh, 1.1rem);
+      font-size: clamp(0.85rem, 1.3vh, 1rem);
       opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
@@ -322,12 +322,12 @@
       const viewportEl = document.getElementById('viewport');
       if (!textEl || !viewportEl) return;
 
-      // Allow using up to 95% of viewport for balanced, readable text
-      const maxHeight = viewportEl.clientHeight * 0.95;
-      const maxWidth = viewportEl.clientWidth * 0.95;
+      // Allow using up to 98% of available space
+      const maxHeight = viewportEl.clientHeight * 0.98;
+      const maxWidth = viewportEl.clientWidth * 0.98;
 
-      let minSize = 36; // Hard floor so text never looks too small on large displays
-      let maxSize = 96; // Balanced upper cap
+      let minSize = 28;
+      let maxSize = 140; // High upper limit for maximum visual impact
       let optimalSize = minSize;
 
       while (minSize <= maxSize) {
@@ -361,7 +361,7 @@
         
         fitTextToContainer();
         textEl.classList.remove('fade-out');
-      }, 250);
+      }, 200);
     }
 
     function startRotation() {
