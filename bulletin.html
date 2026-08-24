@@ -28,7 +28,7 @@
     }
 
     body {
-      padding: clamp(1.5rem, 3%, 3rem);
+      padding: clamp(1.5rem, 3vh, 3rem);
       display: flex;
       flex-direction: column;
     }
@@ -36,21 +36,21 @@
     header {
       display: flex;
       align-items: center;
-      gap: clamp(1rem, 2%, 2rem);
+      gap: clamp(1rem, 2vw, 2rem);
       border-bottom: 4px solid var(--patriots-red);
-      padding-bottom: clamp(0.75rem, 2%, 1.5rem);
-      margin-bottom: clamp(1rem, 2%, 2rem);
+      padding-bottom: clamp(0.5rem, 1.5vh, 1.25rem);
+      margin-bottom: clamp(1rem, 2vh, 1.5rem);
       flex-shrink: 0;
     }
 
     .logo {
-      height: clamp(50px, 10vw, 90px);
+      height: clamp(50px, 8vh, 90px);
       width: auto;
       object-fit: contain;
     }
 
     h1 {
-      font-size: clamp(1.8rem, 5vw, 3.5rem);
+      font-size: clamp(2rem, 4.5vh, 3.5rem);
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -67,42 +67,78 @@
 
     .bulletin-card {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 8px solid var(--patriots-red);
-      border-radius: 12px;
-      padding: clamp(1.5rem, 3%, 2.5rem);
+      border-left: 10px solid var(--patriots-red);
+      border-radius: 16px;
+      padding: clamp(2rem, 4vh, 3.5rem) clamp(2rem, 4vw, 4rem);
       flex: 1;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      overflow-y: auto;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
     }
 
-    .bulletin-date {
-      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
-      font-weight: 700;
-      color: var(--patriots-silver);
-      margin-bottom: clamp(1rem, 2%, 1.5rem);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid rgba(176, 183, 188, 0.2);
-      padding-bottom: 0.5rem;
+    .bulletin-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+      border-bottom: 2px solid rgba(176, 183, 188, 0.25);
+      padding-bottom: clamp(0.75rem, 1.5vh, 1rem);
       flex-shrink: 0;
     }
 
+    .bulletin-date {
+      font-size: clamp(1.4rem, 2.8vh, 2.2rem);
+      font-weight: 800;
+      color: var(--patriots-silver);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .slide-counter {
+      background-color: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--patriots-silver);
+      color: var(--patriots-white);
+      padding: 0.4rem 1.2rem;
+      border-radius: 50px;
+      font-size: clamp(1.1rem, 2.2vh, 1.6rem);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .content-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
     .bulletin-content {
-      font-size: clamp(1.15rem, 2.8vw, 1.8rem);
-      line-height: 1.6;
+      width: 100%;
+      font-size: clamp(2rem, 5vh, 4rem);
+      line-height: 1.4;
+      font-weight: 600;
       color: var(--patriots-white);
       white-space: pre-wrap;
       word-break: break-word;
+      opacity: 1;
+      transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+      transform: translateY(0);
+    }
+
+    .bulletin-content.fade-out {
+      opacity: 0;
+      transform: translateY(-10px);
     }
 
     .pending-notice, .error-notice {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 8px solid var(--patriots-silver);
-      border-radius: 12px;
-      padding: clamp(2rem, 4vw, 4rem);
-      font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+      border-left: 10px solid var(--patriots-silver);
+      border-radius: 16px;
+      padding: 3rem;
+      font-size: clamp(2rem, 5vh, 3.5rem);
       font-weight: 700;
       color: var(--patriots-white);
       text-align: center;
@@ -111,22 +147,22 @@
       align-items: center;
       justify-content: center;
       height: 100%;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     }
 
     .pending-subtitle {
-      font-size: clamp(1rem, 2vw, 1.4rem);
+      font-size: clamp(1.2rem, 2.5vh, 1.8rem);
       font-weight: 400;
       color: var(--patriots-silver);
-      margin-top: 1rem;
+      margin-top: 1.5rem;
     }
 
     footer {
-      margin-top: clamp(1rem, 2%, 1.5rem);
-      padding-top: clamp(0.5rem, 1%, 0.75rem);
+      margin-top: clamp(1rem, 2vh, 1.5rem);
+      padding-top: clamp(0.5rem, 1vh, 0.75rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.8rem, 1.2vw, 1rem);
+      font-size: clamp(0.9rem, 1.5vh, 1.1rem);
       opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
@@ -157,6 +193,11 @@
       `https://corsproxy.io/?${encodeURIComponent(sheetCsvUrl)}`
     ];
 
+    let itemsList = [];
+    let currentIndex = 0;
+    let rotationTimer = null;
+    let formattedDateString = '';
+
     function updateLastUpdatedTime() {
       const now = new Date();
       document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
@@ -166,8 +207,6 @@
 
     function isToday(dateString) {
       if (!dateString) return false;
-      
-      // Clean up common spreadsheet date quirks
       const cleanDate = dateString.trim().replace(/^"|"$/g, '');
       const parsedDate = new Date(cleanDate);
       if (isNaN(parsedDate.getTime())) return false;
@@ -215,6 +254,22 @@
       return lines;
     }
 
+    function extractAnnouncements(rawText) {
+      if (!rawText) return [];
+      
+      // Split by double line breaks, bullet points, or numbered lists
+      let items = rawText
+        .split(/\n\s*\n|(?:\r?\n)(?=[•\-\*\d+\.])/g)
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+
+      if (items.length === 0 && rawText.trim().length > 0) {
+        items = [rawText.trim()];
+      }
+
+      return items;
+    }
+
     async function fetchBulletin() {
       for (let endpoint of fetchEndpoints) {
         try {
@@ -224,12 +279,29 @@
           const rawCsv = await response.text();
           const parsedRows = parseCSV(rawCsv);
 
-          // Cell A1 (Row 0, Col 0) = Date
-          // Cell B1 (Row 0, Col 1) = Bulletin Content
           const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
-          const bulletinContent = (parsedRows[0] && parsedRows[0][1]) ? parsedRows[0][1] : '';
+          const rawContent = (parsedRows[0] && parsedRows[0][1]) ? parsedRows[0][1] : '';
 
-          renderBulletin(sheetDateStr, bulletinContent);
+          if (isToday(sheetDateStr)) {
+            const cleanDate = sheetDateStr.trim().replace(/^"|"$/g, '');
+            formattedDateString = new Date(cleanDate).toLocaleDateString('en-US', {
+              weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+            });
+
+            const newItems = extractAnnouncements(rawContent);
+            
+            // Only re-initialize presentation if content changed
+            if (JSON.stringify(newItems) !== JSON.stringify(itemsList)) {
+              itemsList = newItems;
+              currentIndex = 0;
+              setupCardStructure();
+              startRotation();
+            }
+          } else {
+            stopRotation();
+            renderPendingNotice();
+          }
+
           updateLastUpdatedTime();
           return;
         } catch (error) {
@@ -237,44 +309,74 @@
         }
       }
 
+      stopRotation();
       displayError("Unable to load daily bulletin. Please check your Google Sheet publish settings.");
     }
 
-    function renderBulletin(sheetDateStr, bulletinContent) {
+    function setupCardStructure() {
       const container = document.getElementById('bulletin-container');
-
-      if (isToday(sheetDateStr)) {
-        const cleanDate = sheetDateStr.trim().replace(/^"|"$/g, '');
-        const formattedDate = new Date(cleanDate).toLocaleDateString('en-US', {
-          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-        });
-
-        container.innerHTML = `
-          <div class="bulletin-card">
-            <div class="bulletin-date">${formattedDate}</div>
-            <div class="bulletin-content">${escapeHtml(bulletinContent)}</div>
+      container.innerHTML = `
+        <div class="bulletin-card">
+          <div class="bulletin-header-row">
+            <div class="bulletin-date">${formattedDateString}</div>
+            <div class="slide-counter" id="slide-counter">1 of ${itemsList.length}</div>
           </div>
-        `;
-      } else {
-        container.innerHTML = `
-          <div class="pending-notice">
-            Today's bulletin has not been published yet.
-            <div class="pending-subtitle">Please check back later for announcements.</div>
+          <div class="content-viewport">
+            <div class="bulletin-content" id="bulletin-text"></div>
           </div>
-        `;
+        </div>
+      `;
+      displayCurrentSlide();
+    }
+
+    function displayCurrentSlide() {
+      const textEl = document.getElementById('bulletin-text');
+      const counterEl = document.getElementById('slide-counter');
+
+      if (!textEl) return;
+
+      textEl.classList.add('fade-out');
+
+      setTimeout(() => {
+        textEl.textContent = itemsList[currentIndex] || '';
+        if (counterEl) {
+          counterEl.textContent = `${currentIndex + 1} of ${itemsList.length}`;
+        }
+        textEl.classList.remove('fade-out');
+      }, 300);
+    }
+
+    function startRotation() {
+      stopRotation();
+      if (itemsList.length <= 1) return; // No rotation needed for single announcement
+
+      rotationTimer = setInterval(() => {
+        currentIndex = (currentIndex + 1) % itemsList.length;
+        displayCurrentSlide();
+      }, 10000); // 10 seconds per slide
+    }
+
+    function stopRotation() {
+      if (rotationTimer) {
+        clearInterval(rotationTimer);
+        rotationTimer = null;
       }
+    }
+
+    function renderPendingNotice() {
+      const container = document.getElementById('bulletin-container');
+      container.innerHTML = `
+        <div class="pending-notice">
+          Today's bulletin has not been published yet.
+          <div class="pending-subtitle">Please check back later for announcements.</div>
+        </div>
+      `;
     }
 
     function displayError(message) {
       document.getElementById('bulletin-container').innerHTML = `
         <div class="error-notice">${message}</div>
       `;
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
     }
 
     fetchBulletin();
