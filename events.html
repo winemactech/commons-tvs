@@ -315,6 +315,7 @@
       const now = new Date();
       const upcomingEvents = events
         .filter(evt => evt.timestamp >= now.getTime() - (12 * 60 * 60 * 1000))
+        .filter(evt => !evt.title.toLowerCase().includes('practice'))
         .sort((a, b) => a.timestamp - b.timestamp)
         .slice(0, 25);
 
