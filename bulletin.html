@@ -69,7 +69,7 @@
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 10px solid var(--patriots-red);
       border-radius: 16px;
-      padding: clamp(2rem, 4vh, 3.5rem) clamp(2rem, 4vw, 4rem);
+      padding: clamp(1.5rem, 3vh, 2.5rem) clamp(2rem, 4vw, 3.5rem);
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -81,9 +81,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+      margin-bottom: clamp(1rem, 2vh, 1.5rem);
       border-bottom: 2px solid rgba(176, 183, 188, 0.25);
-      padding-bottom: clamp(0.75rem, 1.5vh, 1rem);
+      padding-bottom: clamp(0.5rem, 1vh, 0.75rem);
       flex-shrink: 0;
     }
 
@@ -113,18 +113,19 @@
       justify-content: center;
       overflow: hidden;
       position: relative;
+      width: 100%;
     }
 
     .bulletin-content {
       width: 100%;
-      font-size: clamp(2rem, 5vh, 4rem);
-      line-height: 1.4;
-      font-weight: 600;
+      text-align: center;
+      line-height: 1.35;
+      font-weight: 700;
       color: var(--patriots-white);
       white-space: pre-wrap;
       word-break: break-word;
       opacity: 1;
-      transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
       transform: translateY(0);
     }
 
@@ -254,22 +255,6 @@
       return lines;
     }
 
-    function extractAnnouncements(rawText) {
-      if (!rawText) return [];
-      
-      // Split by double line breaks, bullet points, or numbered lists
-      let items = rawText
-        .split(/\n\s*\n|(?:\r?\n)(?=[•\-\*\d+\.])/g)
-        .map(item => item.trim())
-        .filter(item => item.length > 0);
-
-      if (items.length === 0 && rawText.trim().length > 0) {
-        items = [rawText.trim()];
-      }
-
-      return items;
-    }
-
     async function fetchBulletin() {
       for (let endpoint of fetchEndpoints) {
         try {
@@ -279,8 +264,8 @@
           const rawCsv = await response.text();
           const parsedRows = parseCSV(rawCsv);
 
+          // Cell A1 (Row 0, Col 0) = Date
           const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
-          const rawContent = (parsedRows[0] && parsedRows[0][1]) ? parsedRows[0][1] : '';
 
           if (isToday(sheetDateStr)) {
             const cleanDate = sheetDateStr.trim().replace(/^"|"$/g, '');
@@ -288,11 +273,16 @@
               weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
             });
 
-            const newItems = extractAnnouncements(rawContent);
-            
-            // Only re-initialize presentation if content changed
-            if (JSON.stringify(newItems) !== JSON.stringify(itemsList)) {
-              itemsList = newItems;
+            // Read ALL non-empty cells in Column B (Col index 1 across every row)
+            const extractedItems = [];
+            for (let row of parsedRows) {
+              if (row[1] && row[1].trim().length > 0) {
+                extractedItems.push(row[1].trim());
+              }
+            }
+
+            if (JSON.stringify(extractedItems) !== JSON.stringify(itemsList)) {
+              itemsList = extractedItems;
               currentIndex = 0;
               setupCardStructure();
               startRotation();
@@ -321,12 +311,39 @@
             <div class="bulletin-date">${formattedDateString}</div>
             <div class="slide-counter" id="slide-counter">1 of ${itemsList.length}</div>
           </div>
-          <div class="content-viewport">
+          <div class="content-viewport" id="viewport">
             <div class="bulletin-content" id="bulletin-text"></div>
           </div>
         </div>
       `;
       displayCurrentSlide();
+    }
+
+    function fitTextToContainer() {
+      const textEl = document.getElementById('bulletin-text');
+      const viewportEl = document.getElementById('viewport');
+      if (!textEl || !viewportEl) return;
+
+      const maxHeight = viewportEl.clientHeight;
+      const maxWidth = viewportEl.clientWidth;
+
+      let minSize = 24;
+      let maxSize = 120;
+      let optimalSize = minSize;
+
+      while (minSize <= maxSize) {
+        let mid = Math.floor((minSize + maxSize) / 2);
+        textEl.style.fontSize = mid + 'px';
+
+        if (textEl.scrollHeight <= maxHeight && textEl.scrollWidth <= maxWidth) {
+          optimalSize = mid;
+          minSize = mid + 1;
+        } else {
+          maxSize = mid - 1;
+        }
+      }
+
+      textEl.style.fontSize = optimalSize + 'px';
     }
 
     function displayCurrentSlide() {
@@ -342,18 +359,19 @@
         if (counterEl) {
           counterEl.textContent = `${currentIndex + 1} of ${itemsList.length}`;
         }
+        fitTextToContainer();
         textEl.classList.remove('fade-out');
-      }, 300);
+      }, 250);
     }
 
     function startRotation() {
       stopRotation();
-      if (itemsList.length <= 1) return; // No rotation needed for single announcement
+      if (itemsList.length <= 1) return;
 
       rotationTimer = setInterval(() => {
         currentIndex = (currentIndex + 1) % itemsList.length;
         displayCurrentSlide();
-      }, 10000); // 10 seconds per slide
+      }, 10000);
     }
 
     function stopRotation() {
@@ -378,6 +396,8 @@
         <div class="error-notice">${message}</div>
       `;
     }
+
+    window.addEventListener('resize', fitTextToContainer);
 
     fetchBulletin();
     setInterval(fetchBulletin, 15 * 60 * 1000);
