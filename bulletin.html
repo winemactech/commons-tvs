@@ -149,8 +149,13 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Replace with your Published Google Sheet CSV Link
-    const sheetCsvUrl = "YOUR_PUBLISHED_CSV_URL_HERE";
+    const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuH1BgocMX1hFpZ2PKK8Hjn4o_-AvtfGTMY1t6sdMWsGmFvCv8tQjOQu29-bgkAyLpL3uTtaNnmpVj/pub?gid=0&single=true&output=csv";
+
+    const fetchEndpoints = [
+      sheetCsvUrl,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetCsvUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(sheetCsvUrl)}`
+    ];
 
     function updateLastUpdatedTime() {
       const now = new Date();
@@ -160,7 +165,11 @@
     }
 
     function isToday(dateString) {
-      const parsedDate = new Date(dateString);
+      if (!dateString) return false;
+      
+      // Clean up common spreadsheet date quirks
+      const cleanDate = dateString.trim().replace(/^"|"$/g, '');
+      const parsedDate = new Date(cleanDate);
       if (isNaN(parsedDate.getTime())) return false;
 
       const today = new Date();
@@ -207,49 +216,59 @@
     }
 
     async function fetchBulletin() {
-      try {
-        const response = await fetch(sheetCsvUrl);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        
-        const rawCsv = await response.text();
-        const parsedRows = parseCSV(rawCsv);
+      for (let endpoint of fetchEndpoints) {
+        try {
+          const response = await fetch(endpoint);
+          if (!response.ok) throw new Error(`HTTP Status ${response.status}`);
+          
+          const rawCsv = await response.text();
+          const parsedRows = parseCSV(rawCsv);
 
-        // Cell A1 (Row 0, Col 0) = Date
-        // Cell B1 (Row 0, Col 1) = Bulletin Content
-        const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
-        const bulletinContent = (parsedRows[0] && parsedRows[0][1]) ? parsedRows[0][1] : '';
+          // Cell A1 (Row 0, Col 0) = Date
+          // Cell B1 (Row 0, Col 1) = Bulletin Content
+          const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
+          const bulletinContent = (parsedRows[0] && parsedRows[0][1]) ? parsedRows[0][1] : '';
 
-        const container = document.getElementById('bulletin-container');
-
-        if (isToday(sheetDateStr)) {
-          const formattedDate = new Date(sheetDateStr).toLocaleDateString('en-US', {
-            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-          });
-
-          container.innerHTML = `
-            <div class="bulletin-card">
-              <div class="bulletin-date">${formattedDate}</div>
-              <div class="bulletin-content">${escapeHtml(bulletinContent)}</div>
-            </div>
-          `;
-        } else {
-          container.innerHTML = `
-            <div class="pending-notice">
-              Today's bulletin has not been published yet.
-              <div class="pending-subtitle">Please check back later for announcements.</div>
-            </div>
-          `;
+          renderBulletin(sheetDateStr, bulletinContent);
+          updateLastUpdatedTime();
+          return;
+        } catch (error) {
+          console.warn("Fetch attempt failed, trying fallback...", error);
         }
+      }
 
-        updateLastUpdatedTime();
-      } catch (error) {
-        console.error("Failed to load bulletin:", error);
-        document.getElementById('bulletin-container').innerHTML = `
-          <div class="error-notice">
-            Unable to load daily bulletin.
+      displayError("Unable to load daily bulletin. Please check your Google Sheet publish settings.");
+    }
+
+    function renderBulletin(sheetDateStr, bulletinContent) {
+      const container = document.getElementById('bulletin-container');
+
+      if (isToday(sheetDateStr)) {
+        const cleanDate = sheetDateStr.trim().replace(/^"|"$/g, '');
+        const formattedDate = new Date(cleanDate).toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+        });
+
+        container.innerHTML = `
+          <div class="bulletin-card">
+            <div class="bulletin-date">${formattedDate}</div>
+            <div class="bulletin-content">${escapeHtml(bulletinContent)}</div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="pending-notice">
+            Today's bulletin has not been published yet.
+            <div class="pending-subtitle">Please check back later for announcements.</div>
           </div>
         `;
       }
+    }
+
+    function displayError(message) {
+      document.getElementById('bulletin-container').innerHTML = `
+        <div class="error-notice">${message}</div>
+      `;
     }
 
     function escapeHtml(text) {
