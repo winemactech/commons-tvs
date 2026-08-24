@@ -51,16 +51,22 @@
       text-transform: uppercase;
     }
 
+    /* CSS Grid Layout prevents odd trailing single cards */
     .menu-container {
       flex: 1;
-      display: flex;
+      display: grid;
       gap: clamp(1rem, 2vw, 2rem);
       justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
+      align-content: center;
+      grid-template-columns: repeat(6, 1fr); /* 6-column base grid for flexible math */
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
+    /* Desktop/TV default: Row 1 has 3 items, Row 2 has 2 items */
     .menu-card {
+      grid-column: span 2; /* 3 cards take up 6 columns total */
       background-color: rgba(255, 255, 255, 0.05);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
@@ -69,14 +75,45 @@
       text-decoration: none;
       color: var(--patriots-white);
       transition: all 0.25s ease;
-      flex: 1 1 clamp(200px, 18vw, 280px);
-      max-width: 320px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       min-height: clamp(140px, 20vh, 220px);
       outline: none;
+    }
+
+    /* Target last two cards on wide screens to center them under top 3 */
+    .menu-card:nth-child(4) {
+      grid-column: 2 / span 2;
+    }
+
+    .menu-card:nth-child(5) {
+      grid-column: 4 / span 2;
+    }
+
+    /* Medium screen adjustment (2-column layout) */
+    @media (max-width: 850px) {
+      .menu-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .menu-card {
+        grid-column: span 1 !important;
+      }
+      /* Stretch 5th card to full width so it doesn't float alone */
+      .menu-card:nth-child(5) {
+        grid-column: span 2 !important;
+      }
+    }
+
+    /* Small screens fallback */
+    @media (max-width: 550px) {
+      .menu-container {
+        grid-template-columns: 1fr;
+      }
+      .menu-card {
+        grid-column: span 1 !important;
+      }
     }
 
     .menu-card:hover,
@@ -147,7 +184,7 @@
 
   <script>
     (function() {
-      const INACTIVITY_TIMEOUT = 30000; // 30 seconds in milliseconds
+      const INACTIVITY_TIMEOUT = 30000; // 30 seconds
       const TARGET_PAGE = 'bulletin.html';
       let inactivityTimer;
 
@@ -160,14 +197,12 @@
         inactivityTimer = setTimeout(redirectToBulletin, INACTIVITY_TIMEOUT);
       }
 
-      // Track interaction events across mouse, keyboard, and touch devices
       const interactionEvents = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll'];
 
       interactionEvents.forEach(event => {
         window.addEventListener(event, resetTimer, { passive: true });
       });
 
-      // Initialize timer on load
       resetTimer();
     })();
   </script>
