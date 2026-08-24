@@ -1,29 +1,44 @@
-name: Fetch and Cache Lunch Menu Sheet
+name: Fetch and Cache Menu iCal
 
 on:
   schedule:
-    # Runs every hour at minute 15
+    # Runs every hour at 15 minutes past the hour
     - cron: '15 * * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fetch-menu.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  fetch-sheet:
+  fetch-menu-ical:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Google Sheet CSV
+      - name: Download Menu iCal ICS
         run: |
           mkdir -p data
-          curl -sL "https://docs.google.com/spreadsheets/d/19pM7zT0pI3C3f8K8bB9qX4uP9M8fKxX/gviz/tq?tqx=out:csv&sheet=Sheet1" -o data/menu.csv
+          curl -sL "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics" -o data/menu.ics
+          
+          # Verify file size in logs
+          echo "Downloaded file size:"
+          ls -lh data/menu.ics
+          
+          # Fail step if file is completely empty
+          if [ ! -s data/menu.ics ]; then
+            echo "Error: Downloaded menu ICS file is empty!"
+            exit 1
+          fi
 
-      - name: Commit and Push Updated CSV
+      - name: Commit and Push Updated ICS
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/menu.csv
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update cached menu CSV [skip ci]" && git push)
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/menu.ics
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update cached menu ICS [skip ci]" && git push)
