@@ -79,7 +79,6 @@
       outline: none;
     }
 
-    /* Combined hover and TV Remote focus states */
     .menu-card:hover,
     .menu-card:focus-visible {
       background-color: rgba(198, 12, 48, 0.2);
@@ -145,6 +144,33 @@
   </main>
 
   <footer>Win-E-Mac Patriots Commons Display</footer>
+
+  <script>
+    (function() {
+      const INACTIVITY_TIMEOUT = 30000; // 30 seconds in milliseconds
+      const TARGET_PAGE = 'bulletin.html';
+      let inactivityTimer;
+
+      function redirectToBulletin() {
+        window.location.href = TARGET_PAGE;
+      }
+
+      function resetTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(redirectToBulletin, INACTIVITY_TIMEOUT);
+      }
+
+      // Track interaction events across mouse, keyboard, and touch devices
+      const interactionEvents = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll'];
+
+      interactionEvents.forEach(event => {
+        window.addEventListener(event, resetTimer, { passive: true });
+      });
+
+      // Initialize timer on load
+      resetTimer();
+    })();
+  </script>
 
 </body>
 </html>
