@@ -23,7 +23,7 @@ jobs:
       - name: Download Google Sheet CSV
         run: |
           mkdir -p data
-          curl -sL "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5K9W9X4J1d_JmN9Y68z8a2k0B5lC1n_8Y9I4dKx0M0rF9G8H/pub?output=csv" -o data/bulletin.csv
+          curl -sL "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuH1BgocMX1hFpZ2PKK8Hjn4o_-AvtfGTMY1t6sdMWsGmFvCv8tQjOQu29-bgkAyLpL3uTtaNnmpVj/pub?output=csv" -o data/bulletin.csv
           
           echo "Downloaded Bulletin size:"
           ls -lh data/bulletin.csv
