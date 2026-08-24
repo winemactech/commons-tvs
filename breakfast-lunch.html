@@ -181,12 +181,12 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const menuCalendarIcalUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
+    const calendarUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
 
-    const proxyUrls = [
-      menuCalendarIcalUrl,
-      `https://corsproxy.io/?${encodeURIComponent(menuCalendarIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(menuCalendarIcalUrl)}`
+    const fetchEndpoints = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(calendarUrl)}`,
+      `https://proxy.cors.sh/${calendarUrl}`
     ];
 
     function getFormattedDate(date) {
@@ -212,49 +212,50 @@
 
     function parseICalDate(dateStr) {
       if (!dateStr) return null;
-      dateStr = dateStr.trim();
-      
-      const match = dateStr.match(/^(\d{4})(\d{2})(\d{2})/);
+      const cleanStr = dateStr.trim();
+      const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})/);
       if (!match) return null;
 
       const [, year, month, day] = match;
-      return new Date(year, month - 1, day);
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
 
-    function parseAndUnfoldICS(icsData) {
+    function unfoldICS(icsData) {
+      // Unfold folded lines in standard iCal format
       return icsData.replace(/\r?\n[ \t]/g, '');
     }
 
-    function extractLines(rawText) {
-      if (!rawText) return [];
-      // Clean iCal escape characters like \n, \,, \;
-      const cleaned = rawText
+    function extractDescriptionItems(rawDesc) {
+      if (!rawDesc) return [];
+      // Clean up escaped line breaks and characters from Google Calendar iCal output
+      const cleaned = rawDesc
         .replace(/\\n/gi, '\n')
         .replace(/\\,/g, ',')
-        .replace(/\\;/g, ';');
-      
+        .replace(/\\;/g, ';')
+        .replace(/\\/g, '');
+
       return cleaned
         .split('\n')
         .map(line => line.trim())
-        .filter(line => line.length > 0);
+        .filter(line => line.length > 0 && !line.toLowerCase().startsWith('http'));
     }
 
     async function fetchMenuCalendar() {
-      for (let i = 0; i < proxyUrls.length; i++) {
+      for (let url of fetchEndpoints) {
         try {
-          const response = await fetch(proxyUrls[i]);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          const data = await response.text();
-          parseAndRenderCalendarMenu(data);
-          updateLastUpdatedTime();
-          return;
-        } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
-          if (i === proxyUrls.length - 1) {
-            displayError("Unable to load menu calendar. Please verify calendar public access settings.");
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP Status ${response.status}`);
+          const rawText = await response.text();
+          if (rawText.includes('BEGIN:VCALENDAR')) {
+            parseAndRenderCalendarMenu(rawText);
+            updateLastUpdatedTime();
+            return;
           }
+        } catch (e) {
+          console.warn("Proxy attempt failed, trying next option...", e);
         }
       }
+      displayError("Unable to fetch menu data from Google Calendar feed.");
     }
 
     function displayError(message) {
@@ -270,45 +271,42 @@
 
     function parseAndRenderCalendarMenu(icsData) {
       const container = document.getElementById('menu-container');
-      const unfoldedData = parseAndUnfoldICS(icsData);
-      const blocks = unfoldedData.split('BEGIN:VEVENT');
+      const unfolded = unfoldICS(icsData);
+      const events = unfolded.split('BEGIN:VEVENT');
 
       const today = new Date();
       const nextSchoolDay = getNextSchoolDay(today);
-
       const nextDayName = (today.getDay() === 5 || today.getDay() === 6) ? "Monday's" : "Tomorrow's";
 
       let todayLunchItems = [];
       let nextDayBreakfastItems = [];
       let nextDayLunchItems = [];
 
-      blocks.slice(1).forEach(block => {
+      events.slice(1).forEach(block => {
         const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
         const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
         const descriptionMatch = block.match(/^DESCRIPTION:(.*)$/m);
 
         if (dtstartMatch) {
-          const eventDate = parseICalDate(dtstartMatch[1].trim());
+          const eventDate = parseICalDate(dtstartMatch[1]);
           if (!eventDate) return;
 
           const summary = summaryMatch ? summaryMatch[1].trim() : '';
           const description = descriptionMatch ? descriptionMatch[1].trim() : '';
 
-          // Prefer DESCRIPTION for items; fall back to SUMMARY if DESCRIPTION is empty
-          const contentToUse = description || summary;
-          const parsedItems = extractLines(contentToUse);
-
-          const fullText = (summary + " " + description).toLowerCase();
+          // Primary menu source: DESCRIPTION lines. Fallback: SUMMARY
+          const menuList = description ? extractDescriptionItems(description) : [summary];
+          const fullContext = (summary + " " + description).toLowerCase();
 
           if (isSameDate(eventDate, today)) {
-            if (fullText.includes('lunch') || (!fullText.includes('breakfast') && !fullText.includes('dinner'))) {
-              todayLunchItems.push(...parsedItems);
+            if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
+              todayLunchItems.push(...menuList);
             }
           } else if (isSameDate(eventDate, nextSchoolDay)) {
-            if (fullText.includes('breakfast')) {
-              nextDayBreakfastItems.push(...parsedItems);
-            } else if (fullText.includes('lunch') || (!fullText.includes('breakfast') && !fullText.includes('dinner'))) {
-              nextDayLunchItems.push(...parsedItems);
+            if (fullContext.includes('breakfast')) {
+              nextDayBreakfastItems.push(...menuList);
+            } else if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
+              nextDayLunchItems.push(...menuList);
             }
           }
         }
