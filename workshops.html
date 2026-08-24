@@ -73,43 +73,43 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      gap: clamp(0.75rem, 1.5%, 1rem);
-      padding-right: clamp(0.5rem, 1%, 1rem);
+      gap: 1.2rem;
+      padding-right: 0.8rem;
       overflow-y: auto;
       min-height: 0;
     }
 
     .event-card {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 8px solid var(--patriots-red);
-      border-top: 1px solid rgba(176, 183, 188, 0.15);
-      border-right: 1px solid rgba(176, 183, 188, 0.15);
-      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
-      border-radius: 8px;
-      padding: clamp(1rem, 1.8%, 1.4rem) clamp(1.2rem, 2%, 1.8rem);
+      border-left: 10px solid var(--patriots-red);
+      border-top: 1px solid rgba(176, 183, 188, 0.2);
+      border-right: 1px solid rgba(176, 183, 188, 0.2);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.2);
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
       display: grid;
       grid-template-columns: 2fr 1.3fr 1.2fr;
-      gap: clamp(1rem, 2%, 2rem);
+      gap: 2rem;
       align-items: center;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       flex-shrink: 0;
     }
 
     .event-title {
-      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      font-size: clamp(1.8rem, 3.2vw, 2.5rem);
       font-weight: 700;
       color: var(--patriots-white);
       line-height: 1.25;
     }
 
     .event-datetime {
-      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-size: clamp(1.5rem, 2.6vw, 2.1rem);
       color: var(--patriots-silver);
       font-weight: 600;
     }
 
     .event-location {
-      font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+      font-size: clamp(1.4rem, 2.4vw, 1.9rem);
       color: var(--patriots-silver);
       font-style: italic;
       text-align: right;
@@ -117,10 +117,10 @@
 
     .error-message, .loading-message {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
+      border-left: 8px solid var(--patriots-red);
       border-radius: 8px;
       padding: 1.5rem;
-      font-size: clamp(1rem, 2vw, 1.3rem);
+      font-size: clamp(1.5rem, 2.5vw, 2rem);
       color: var(--patriots-white);
     }
 
@@ -129,25 +129,25 @@
     }
 
     .events-scroll-container::-webkit-scrollbar {
-      width: 6px;
+      width: 8px;
     }
 
     .events-scroll-container::-webkit-scrollbar-track {
       background: rgba(176, 183, 188, 0.1);
-      border-radius: 3px;
+      border-radius: 4px;
     }
 
     .events-scroll-container::-webkit-scrollbar-thumb {
       background: var(--patriots-red);
-      border-radius: 3px;
+      border-radius: 4px;
     }
 
     footer {
-      margin-top: clamp(1rem, 2%, 1.5rem);
-      padding-top: clamp(0.5rem, 1%, 0.75rem);
+      margin-top: 1.5rem;
+      padding-top: 0.75rem;
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.8rem, 1.2vw, 1rem);
+      font-size: clamp(0.85rem, 1.2vw, 1.1rem);
       opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
@@ -301,10 +301,11 @@
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Show upcoming events sorted by start date
+      // Show upcoming events sorted by start date and capped at 10 items max
       return events
         .filter(e => e.start && e.start >= today)
-        .sort((a, b) => a.start - b.start);
+        .sort((a, b) => a.start - b.start)
+        .slice(0, 10);
     }
 
     async function fetchWorkshops() {
