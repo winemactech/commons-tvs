@@ -184,12 +184,14 @@
     let scrollInterval = null;
     let scrollDelay = null;
 
-    // Robust iCal Date Parser (handles DTSTART;TZID=..., ALL-DAY dates, UTC, and local times)
+    // Parses standard iCal date formats: YYYYMMDD or YYYYMMDDTHHMMSS(Z)
     function parseICalDate(dateStr) {
       if (!dateStr) return null;
+      
+      // Clean string of any remaining whitespace
       const cleanStr = dateStr.trim();
       
-      // Match YYYYMMDD or YYYYMMDDTHHMMSS
+      // Matches YYYYMMDD or YYYYMMDDTHHMMSS with optional Z suffix
       const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/);
       if (!match) return null;
 
@@ -198,14 +200,12 @@
       if (isUtc) {
         return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second)));
       } else {
-        // Parse local time assuming target display timezone context
         return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
       }
     }
 
     function formatDateForDisplay(dateObj) {
       if (!dateObj || isNaN(dateObj.getTime())) return "TBD";
-      
       return dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
@@ -224,7 +224,6 @@
 
     function startAutoScroll() {
       const container = document.getElementById('scroll-container');
-      
       if (scrollInterval) clearInterval(scrollInterval);
       if (scrollDelay) clearTimeout(scrollDelay);
 
@@ -234,7 +233,6 @@
         scrollDelay = setTimeout(() => {
           scrollInterval = setInterval(() => {
             container.scrollTop += 1;
-
             if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
               clearInterval(scrollInterval);
               setTimeout(() => {
@@ -245,85 +243,52 @@
           }, 40);
         }, 2000);
       }
-
       initScroll();
     }
 
-    // Direct JSONP loader to bypass CORS / iframe fetch restrictions inside player.ablesign.tv
-    function fetchICSViaJSONP() {
-      return new Promise((resolve) => {
-        const callbackName = 'handleCalendarResponse_' + Math.floor(Math.random() * 1000000);
-        const script = document.createElement('script');
-        let resolved = false;
+    async function fetchCalendarICS() {
+      const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`
+      ];
 
-        const timeout = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve(null);
-          }
-        }, 6000);
-
-        function cleanup() {
-          delete window[callbackName];
-          if (script.parentNode) script.parentNode.removeChild(script);
-          clearTimeout(timeout);
-        }
-
-        window[callbackName] = function(data) {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            if (data && data.contents && data.contents.includes('BEGIN:VCALENDAR')) {
-              resolve(data.contents);
-            } else {
-              resolve(null);
+      for (const proxyUrl of proxies) {
+        try {
+          const res = await fetch(proxyUrl);
+          if (res.ok) {
+            const text = await res.text();
+            if (text && text.includes('BEGIN:VCALENDAR')) {
+              return text;
             }
           }
-        };
-
-        script.src = `https://api.allorigins.win/get?url=${encodeURIComponent(workshopCalendarIcalUrl)}&callback=${callbackName}`;
-        script.onerror = function() {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve(null);
-          }
-        };
-
-        document.body.appendChild(script);
-      });
+        } catch (e) {
+          console.warn("Proxy attempt failed:", proxyUrl, e);
+        }
+      }
+      return null;
     }
 
     async function fetchEventsWithRetry() {
-      // 1. Immediately render cached data if available
-      const cached = localStorage.getItem(CACHE_KEY);
-      let loadedFromCache = false;
-
-      if (cached) {
-        try {
-          const { icsData, time } = JSON.parse(cached);
-          if (icsData) {
-            parseAndRenderICS(icsData);
-            updateLastUpdatedTime(time);
-            loadedFromCache = true;
-          }
-        } catch (e) {
-          console.error("Cache read error:", e);
-        }
-      }
-
-      // 2. Fetch fresh Google Calendar iCal feed
-      const freshICS = await fetchICSViaJSONP();
+      const freshICS = await fetchCalendarICS();
 
       if (freshICS) {
-        const cachePayload = { icsData: freshICS, time: Date.now() };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
-
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ icsData: freshICS, time: Date.now() }));
         parseAndRenderICS(freshICS);
-        updateLastUpdatedTime(cachePayload.time);
-      } else if (!loadedFromCache) {
-        parseAndRenderICS("");
+        updateLastUpdatedTime(Date.now());
+      } else {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const { icsData, time } = JSON.parse(cached);
+            parseAndRenderICS(icsData);
+            updateLastUpdatedTime(time);
+          } catch (e) {
+            console.error("Cache read error:", e);
+          }
+        } else {
+          document.getElementById('scroll-container').innerHTML = 
+            '<div class="loading-message">Unable to load Google Calendar feed.</div>';
+        }
       }
     }
 
@@ -345,50 +310,35 @@
       const blocks = unfoldedData.split('BEGIN:VEVENT');
 
       const now = new Date();
-      // Show workshops starting from 7 days ago through the future
-      const pastCutoff = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+      // Show events starting from 3 days ago through the future
+      const pastCutoff = now.getTime() - (3 * 24 * 60 * 60 * 1000);
 
       blocks.slice(1).forEach(block => {
         const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
-        // Extracts raw date string regardless of DTSTART parameter formatting (e.g. DTSTART;TZID=...:20260825T140000)
+        // Extracts EVERYTHING after the final colon on the DTSTART line
         const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:([^\r\n]+)/m);
         const locationMatch = block.match(/^LOCATION:(.*)$/m);
-        const rruleMatch = block.match(/^RRULE:(.*)$/m);
 
         if (summaryMatch && dtstartMatch) {
           let title = summaryMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\/g, '');
-          const rawDateStr = dtstartMatch[1].trim();
+          
+          // Split on ':' to guarantee we take only the raw date string after any parameters/TZID
+          const rawDtstart = dtstartMatch[1].trim();
+          const rawDateStr = rawDtstart.includes(':') ? rawDtstart.split(':').pop() : rawDtstart;
+          
           let location = locationMatch ? locationMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\/g, '') : '';
           
           const baseDateObj = parseICalDate(rawDateStr);
-          
+
           if (baseDateObj && !isNaN(baseDateObj.getTime())) {
-            // Push primary event
             if (baseDateObj.getTime() >= pastCutoff) {
               events.push({ title, location, dateObj: baseDateObj, timestamp: baseDateObj.getTime() });
-            }
-
-            // Handle weekly recurring rules (RRULE:FREQ=WEEKLY)
-            if (rruleMatch) {
-              const rrule = rruleMatch[1];
-              if (rrule.includes('FREQ=WEEKLY')) {
-                // Generate next 8 weekly occurrences
-                for (let i = 1; i <= 8; i++) {
-                  const recurrentDate = new Date(baseDateObj.getTime() + (i * 7 * 24 * 60 * 60 * 1000));
-                  if (recurrentDate.getTime() >= pastCutoff) {
-                    events.push({ title, location, dateObj: recurrentDate, timestamp: recurrentDate.getTime() });
-                  }
-                }
-              }
             }
           }
         }
       });
 
-      // Sort chronological and take the top 30
-      const upcomingEvents = events
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .slice(0, 30);
+      const upcomingEvents = events.sort((a, b) => a.timestamp - b.timestamp).slice(0, 30);
 
       if (upcomingEvents.length === 0) {
         container.innerHTML = '<div class="loading-message">No upcoming workshops scheduled.</div>';
@@ -398,7 +348,6 @@
       upcomingEvents.forEach(evt => {
         const card = document.createElement('div');
         card.className = 'event-card';
-        
         card.innerHTML = `
           <div class="event-title">${escapeHtml(evt.title)}</div>
           <div class="event-datetime">${formatDateForDisplay(evt.dateObj)}</div>
