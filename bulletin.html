@@ -175,11 +175,14 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0/export?format=csv&gid=0";
-
-    const proxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(sheetUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetUrl)}`
+    // Direct Google Sheets CSV Export Endpoints
+    const sheetId = "1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0";
+    
+    // We try direct fetch first, followed by fallback export formats
+    const fetchEndpoints = [
+      `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sheet1`,
+      `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`)}`
     ];
 
     let currentSlide = 0;
@@ -199,7 +202,6 @@
 
     function showSlide(index) {
       if (slides.length === 0) return;
-      
       slides.forEach(slide => slide.classList.remove('active'));
       
       currentSlide = index % slides.length;
@@ -210,28 +212,33 @@
 
     function startSlideshow() {
       if (slideInterval) clearInterval(slideInterval);
-      if (slides.length <= 1) return; // No need to cycle if 1 or 0 slides
+      if (slides.length <= 1) return;
       
       slideInterval = setInterval(() => {
         currentSlide = (currentSlide + 1) % slides.length;
         showSlide(currentSlide);
-      }, 6000); // Hold each slide for 6 seconds
+      }, 6000); // 6 seconds per slide
     }
 
     async function fetchBulletinWithRetry() {
-      for (let i = 0; i < proxyUrls.length; i++) {
+      for (let i = 0; i < fetchEndpoints.length; i++) {
         try {
-          const response = await fetch(proxyUrls[i]);
+          console.log(`Trying endpoint ${i + 1}...`);
+          const response = await fetch(fetchEndpoints[i], { cache: "no-store" });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           
           const csv = await response.text();
+          if (!csv || csv.includes("<!DOCTYPE html>")) {
+            throw new Error("Received HTML login page instead of CSV data.");
+          }
+          
           parseAndRenderBulletin(csv);
           updateLastUpdatedTime();
           return;
         } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
-          if (i === proxyUrls.length - 1) {
-            displayError(`Unable to load bulletin from Google Sheet.`);
+          console.error(`Endpoint ${i + 1} failed:`, error);
+          if (i === fetchEndpoints.length - 1) {
+            displayError(`Unable to load bulletin from Google Sheet. Make sure the sheet sharing is set to "Anyone with the link can view".`);
           }
         }
       }
@@ -242,7 +249,6 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    // Handles multi-line CSV entries properly
     function parseCSV(text) {
       const lines = [];
       let entry = '';
@@ -252,7 +258,7 @@
         const c = text[i];
         if (c === '"') {
           inQuotes = !inQuotes;
-        } else if (c === '\n' && !inQuotes) {
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
           if (entry.trim()) lines.push(cleanEntry(entry));
           entry = '';
         } else {
@@ -278,12 +284,17 @@
 
       const announcements = parseCSV(csvText);
 
-      if (announcements.length === 0) {
+      // Filter out header row if present
+      const filteredAnnouncements = announcements.filter(item => 
+        item.toLowerCase() !== "announcements" && item.toLowerCase() !== "bulletin"
+      );
+
+      if (filteredAnnouncements.length === 0) {
         displayError('No announcements found in the bulletin.');
         return;
       }
 
-      announcements.forEach((announcement, index) => {
+      filteredAnnouncements.forEach((announcement, index) => {
         const slide = document.createElement('div');
         slide.className = 'announcement-slide';
         if (index === 0) slide.classList.add('active');
@@ -292,7 +303,7 @@
           <div class="slide-body">
             <div class="announcement-text">${escapeHtml(announcement)}</div>
           </div>
-          <div class="slide-counter">${index + 1} of ${announcements.length}</div>
+          <div class="slide-counter">${index + 1} of ${filteredAnnouncements.length}</div>
         `;
         
         container.appendChild(slide);
@@ -308,7 +319,7 @@
       return div.innerHTML;
     }
 
-    // Initial Load & 5-minute Auto-refresh
+    // Initial Load & Auto-refresh every 5 minutes
     fetchBulletinWithRetry();
     setInterval(fetchBulletinWithRetry, 5 * 60 * 1000);
   </script>
