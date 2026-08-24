@@ -1,0 +1,29 @@
+name: Fetch and Cache Lunch Menu Sheet
+
+on:
+  schedule:
+    # Runs every hour at minute 15
+    - cron: '15 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-sheet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Google Sheet CSV
+        run: |
+          mkdir -p data
+          curl -sL "https://docs.google.com/spreadsheets/d/19pM7zT0pI3C3f8K8bB9qX4uP9M8fKxX/gviz/tq?tqx=out:csv&sheet=Sheet1" -o data/menu.csv
+
+      - name: Commit and Push Updated CSV
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/menu.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update cached menu CSV [skip ci]" && git push)
