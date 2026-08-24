@@ -22,9 +22,8 @@
       background-color: var(--patriots-navy);
       color: var(--patriots-white);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      padding: 2rem 3rem;
-      height: 100vh;
-      overflow: hidden;
+      padding: clamp(1rem, 3%, 3rem);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -32,19 +31,20 @@
     header {
       display: flex;
       align-items: center;
-      gap: 2rem;
+      gap: clamp(1rem, 2%, 2rem);
       border-bottom: 3px solid var(--patriots-red);
-      padding-bottom: 1.5rem;
-      margin-bottom: 3rem;
+      padding-bottom: clamp(0.75rem, 2%, 1.5rem);
+      margin-bottom: clamp(1.5rem, 3%, 3rem);
+      flex-shrink: 0;
     }
 
     .logo {
-      height: 100px;
+      height: clamp(60px, 14vw, 120px);
       width: auto;
     }
 
     h1 {
-      font-size: 3.5rem;
+      font-size: clamp(1.5rem, 7vw, 3.5rem);
       font-weight: 800;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -53,7 +53,7 @@
     .menu-container {
       flex: 1;
       display: flex;
-      gap: 2rem;
+      gap: clamp(1rem, 2%, 2rem);
       justify-content: center;
       align-items: center;
       flex-wrap: wrap;
@@ -63,20 +63,18 @@
       background-color: rgba(255, 255, 255, 0.05);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
-      padding: 2rem 3rem;
+      padding: clamp(1rem, 2%, 2rem) clamp(1.5rem, 2.5%, 3rem);
       text-align: center;
       text-decoration: none;
       color: var(--patriots-white);
       transition: all 0.3s ease;
-      flex: 0 1 calc(25% - 2rem);
-      min-width: 180px;
-      max-width: 220px;
+      flex: 0 1 clamp(150px, 22%, 250px);
       cursor: pointer;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 200px;
+      min-height: clamp(150px, 25vh, 250px);
     }
 
     .menu-card:hover {
@@ -86,26 +84,28 @@
     }
 
     .menu-card h2 {
-      font-size: 1.8rem;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
       font-weight: 800;
-      margin-bottom: 1rem;
+      margin-bottom: clamp(0.5rem, 1%, 1rem);
       letter-spacing: 1px;
       text-transform: uppercase;
     }
 
     .menu-card p {
-      font-size: 0.95rem;
+      font-size: clamp(0.8rem, 2vw, 0.95rem);
       color: var(--patriots-silver);
       font-weight: 500;
+      line-height: 1.4;
     }
 
     footer {
-      padding-top: 1rem;
+      padding-top: clamp(0.5rem, 1%, 1rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: 0.9rem;
+      font-size: clamp(0.75rem, 1.5vw, 0.9rem);
       opacity: 0.7;
       text-align: center;
+      flex-shrink: 0;
     }
   </style>
 </head>
