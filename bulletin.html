@@ -103,6 +103,12 @@
       pointer-events: auto;
     }
 
+    /* Distinct styling for the unpublished/empty state card */
+    .bulletin-card.empty-state {
+      border-left-color: var(--patriots-silver);
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
     .bulletin-header-meta {
       display: flex;
       justify-content: space-between;
@@ -131,6 +137,15 @@
       word-wrap: break-word;
       text-align: center;
       width: 100%;
+    }
+
+    .bulletin-body.unpublished-msg {
+      font-size: clamp(1.5rem, 3.2vw, 2.4rem);
+      color: var(--patriots-silver);
+      font-style: italic;
+      line-height: 1.4;
+      max-width: 80%;
+      margin: 0 auto;
     }
 
     .error-message, .loading-message {
@@ -211,6 +226,20 @@
       const year = utcDate.getFullYear();
       
       return `${month} ${day}${getOrdinalSuffix(day)}, ${year}`;
+    }
+
+    // Checks if the given date string corresponds to today's date
+    function isToday(dateStr) {
+      if (!dateStr) return false;
+      const parsedDate = new Date(dateStr);
+      if (isNaN(parsedDate.getTime())) return false;
+
+      const utcDate = new Date(parsedDate.getTime() + parsedDate.getTimezoneOffset() * 60000);
+      const today = new Date();
+
+      return utcDate.getFullYear() === today.getFullYear() &&
+             utcDate.getMonth() === today.getMonth() &&
+             utcDate.getDate() === today.getDate();
     }
 
     function parseCSVLine(line) {
@@ -299,6 +328,29 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
+    function renderUnpublishedCard(dateStr) {
+      const container = document.getElementById('card-container');
+      container.innerHTML = '';
+      if (rotateInterval) clearInterval(rotateInterval);
+
+      const headerDateText = dateStr ? formatDateString(dateStr) : 'Notice';
+
+      const card = document.createElement('div');
+      card.className = 'bulletin-card active empty-state';
+
+      card.innerHTML = `
+        <div class="bulletin-header-meta">
+          <span>${escapeHtml(headerDateText)}</span>
+          <span>Status</span>
+        </div>
+        <div class="bulletin-body-wrapper">
+          <div class="bulletin-body unpublished-msg">Today's bulletin hasn't been published yet. Please check back for announcements later!</div>
+        </div>
+      `;
+
+      container.appendChild(card);
+    }
+
     function calculateSharedFontSize(items, wrapperWidth, wrapperHeight) {
       let maxLen = 0;
       let longestText = '';
@@ -326,10 +378,9 @@
       document.body.appendChild(dummy);
 
       let low = 12;
-      let high = 90; // Prevents gigantic text on high-res desktop monitors
+      let high = 90;
       let bestSize = low;
 
-      // 90% vertical target height to guarantee padding buffer
       const targetHeight = wrapperHeight * 0.90;
 
       while (low <= high) {
@@ -354,14 +405,14 @@
       if (rotateInterval) clearInterval(rotateInterval);
 
       if (!rows || rows.length === 0) {
-        container.innerHTML = '<div class="loading-message">No announcements posted for today.</div>';
+        renderUnpublishedCard('');
         return;
       }
 
-      let todayDate = '';
+      let rawDateA2 = '';
       const announcements = [];
 
-      rows.forEach(row => {
+      rows.forEach((row, index) => {
         const keys = Object.keys(row);
         const colA = row[keys[0]] ? row[keys[0]].trim() : '';
         const colB = row[keys[1]] ? row[keys[1]].trim() : '';
@@ -370,27 +421,32 @@
           return;
         }
 
-        if (!todayDate && colA) {
-          todayDate = formatDateString(colA);
+        // Capture date from A2 (first data row)
+        if (index === 0 && colA) {
+          rawDateA2 = colA;
         }
+
         if (colB) {
           announcements.push(colB);
         }
       });
 
-      if (announcements.length === 0) {
-        container.innerHTML = '<div class="loading-message">No active announcements available.</div>';
+      // Trigger fallback card if A2 date is NOT today, or if no announcements exist in Column B
+      if (!isToday(rawDateA2) || announcements.length === 0) {
+        renderUnpublishedCard(rawDateA2);
         return;
       }
 
+      const todayDateFormatted = formatDateString(rawDateA2);
       const total = announcements.length;
+
       announcements.forEach((text, index) => {
         const card = document.createElement('div');
         card.className = `bulletin-card ${index === 0 ? 'active' : ''}`;
 
         card.innerHTML = `
           <div class="bulletin-header-meta">
-            <span>${escapeHtml(todayDate)}</span>
+            <span>${escapeHtml(todayDateFormatted)}</span>
             <span>${index + 1} of ${total}</span>
           </div>
           <div class="bulletin-body-wrapper">
@@ -401,14 +457,12 @@
         container.appendChild(card);
       });
 
-      // Query real rendering bounds from active DOM container
       const bodyWrapper = container.querySelector('.bulletin-body-wrapper');
       const availableWidth = bodyWrapper.clientWidth;
       const availableHeight = bodyWrapper.clientHeight;
 
       const fontSize = calculateSharedFontSize(announcements, availableWidth, availableHeight);
 
-      // Apply dynamically scaled size to all active card bodies
       container.querySelectorAll('.bulletin-body').forEach(el => {
         el.style.fontSize = `${fontSize}px`;
       });
