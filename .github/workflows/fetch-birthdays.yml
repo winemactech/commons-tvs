@@ -1,0 +1,32 @@
+name: Fetch and Cache Birthday Sheets
+
+on:
+  schedule:
+    # Runs every hour at minute 5
+    - cron: '5 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-sheets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Google Sheets CSVs
+        run: |
+          mkdir -p data
+          # Staff Birthdays Sheet
+          curl -sL "https://docs.google.com/spreadsheets/d/1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo/gviz/tq?tqx=out:csv&sheet=Sheet1" -o data/staff_birthdays.csv
+          # Student Birthdays Sheet
+          curl -sL "https://docs.google.com/spreadsheets/d/1wH7lhd_pg9jjdSwrOOZmeiFGT5lDqdJXZWhbbYPPsTI/gviz/tq?tqx=out:csv&sheet=Sheet1" -o data/student_birthdays.csv
+
+      - name: Commit and Push Updated CSVs
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/staff_birthdays.csv data/student_birthdays.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update cached birthday CSVs [skip ci]" && git push)
