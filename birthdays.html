@@ -23,7 +23,8 @@
       color: var(--patriots-white);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       padding: clamp(1rem, 3%, 3rem);
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
@@ -152,36 +153,38 @@
       background-color: var(--patriots-red);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
-      padding: clamp(1rem, 2%, 1.5rem);
+      padding: clamp(0.75rem, 1.5%, 1.25rem);
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       text-align: center;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       overflow: hidden;
-      justify-content: center;
+      min-height: 0;
     }
 
     .staff-photo {
-      width: clamp(60px, 15vw, 100px);
-      height: clamp(60px, 15vw, 100px);
+      width: clamp(50px, 12vw, 80px);
+      height: clamp(50px, 12vw, 80px);
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid var(--patriots-white);
-      margin-bottom: clamp(0.5rem, 1%, 1rem);
+      margin-bottom: clamp(0.4rem, 0.75%, 0.75rem);
       background-color: rgba(255, 255, 255, 0.1);
       flex-shrink: 0;
     }
 
     .staff-name {
-      font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+      font-size: clamp(1rem, 2.25vw, 1.2rem);
       font-weight: 700;
       color: var(--patriots-white);
-      margin-bottom: clamp(0.25rem, 0.5%, 0.5rem);
+      margin-bottom: clamp(0.2rem, 0.4%, 0.4rem);
+      line-height: 1.2;
     }
 
     .staff-date {
-      font-size: clamp(0.9rem, 2vw, 1rem);
+      font-size: clamp(0.85rem, 1.8vw, 0.95rem);
       color: rgba(255, 255, 255, 0.8);
       font-weight: 500;
     }
@@ -507,17 +510,16 @@
         
         const ageElement = document.createElement('div');
         ageElement.className = 'student-age';
-        ageElement.textContent = `Turning ${bd.age}`;
+        ageElement.textContent = bd.age;
         
         card.appendChild(nameElement);
         card.appendChild(dateElement);
         card.appendChild(ageElement);
-        
         container.appendChild(card);
       });
 
-      // Start auto-scroll after rendering
       startStudentScroll();
+      updateLastUpdatedTime();
     }
 
     // Fetch and parse staff birthdays
@@ -548,77 +550,92 @@
       container.innerHTML = '';
 
       if (!rows || rows.length === 0) {
-        container.innerHTML = '<div class="error-message">No staff birthdays found in sheet.</div>';
+        container.innerHTML = '<div class="error-message">Staff birthdays spreadsheet is empty.</div>';
         return;
       }
 
-      const birthdays = [];
+      const staffBirthdays = [];
 
       // Parse rows - use exact column names from sheet
       rows.forEach(row => {
         const name = row['Staff Name'] || '';
-        const mmdd = row['Staff Birthday'] || '';
+        const birthDate = row['Birthday'] || '';
 
         const cleanName = name.trim();
-        const cleanMMDD = mmdd.trim();
-        
-        // Generate GitHub image URL from staff name (lowercase)
-        const photoUrl = generateGithubImageUrl(cleanName);
+        const dateInfo = parseDateString(birthDate);
 
-        console.log(`Processing: ${cleanName}, ${cleanMMDD}, ${photoUrl}`);
+        if (!dateInfo) {
+          console.log(`Skipping staff member ${cleanName}: invalid birth date format`);
+          return;
+        }
 
-        if (cleanName && cleanMMDD && cleanMMDD.length === 4 && /^\d{4}$/.test(cleanMMDD)) {
-          const daysUntil = daysUntilBirthday(cleanMMDD);
-          
-          console.log(`${cleanName} birthday: ${cleanMMDD}, days until: ${daysUntil}`);
-          
-          // Only include birthdays in next 30 days
-          if (daysUntil >= 0 && daysUntil <= 30) {
-            birthdays.push({
-              name: cleanName,
-              mmdd: cleanMMDD,
-              photoUrl: photoUrl,
-              daysUntil
-            });
-          }
+        const { mmdd, year } = dateInfo;
+        const daysUntil = daysUntilBirthday(mmdd);
+        const age = calculateAge(year);
+
+        console.log(`Processing staff: ${cleanName}, DOB: ${birthDate}, Age turning: ${age}, Days until: ${daysUntil}`);
+
+        if (daysUntil >= 0) {
+          staffBirthdays.push({
+            name: cleanName,
+            mmdd: mmdd,
+            age: age,
+            daysUntil
+          });
         }
       });
 
       // Sort by days until birthday
-      birthdays.sort((a, b) => a.daysUntil - b.daysUntil);
+      staffBirthdays.sort((a, b) => a.daysUntil - b.daysUntil);
 
-      console.log(`Found ${birthdays.length} upcoming staff birthdays in next 30 days`);
+      console.log(`Found ${staffBirthdays.length} upcoming staff birthdays`);
 
-      if (birthdays.length === 0) {
-        container.innerHTML = '<div class="error-message">No upcoming staff birthdays in the next 30 days.</div>';
+      if (staffBirthdays.length === 0) {
+        container.innerHTML = '<div class="error-message">No upcoming staff birthdays.</div>';
         return;
       }
 
-      // Show only first 2 birthdays
-      birthdays.slice(0, 2).forEach(bd => {
+      // Show up to 2 staff birthdays (the grid is 2 rows)
+      const displayStaff = staffBirthdays.slice(0, 2);
+
+      displayStaff.forEach(bd => {
         const card = document.createElement('div');
         card.className = 'staff-card';
-        const formattedDate = formatMMDDToDate(bd.mmdd);
         
-        card.innerHTML = `
-          <img src="${bd.photoUrl}" alt="${bd.name}" class="staff-photo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23C60C30%22/%3E%3C/svg%3E'">
-          <div class="staff-name">${bd.name}</div>
-          <div class="staff-date">Birthday: ${formattedDate}</div>
-        `;
+        const imageUrl = generateGithubImageUrl(bd.name);
+        const photo = document.createElement('img');
+        photo.className = 'staff-photo';
+        photo.src = imageUrl;
+        photo.alt = bd.name;
+        photo.onerror = function() {
+          this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23B0B7BC"/%3E%3C/svg%3E';
+        };
+        
+        const nameElement = document.createElement('div');
+        nameElement.className = 'staff-name';
+        nameElement.textContent = bd.name;
+        
+        const dateElement = document.createElement('div');
+        dateElement.className = 'staff-date';
+        dateElement.textContent = formatMMDDToDate(bd.mmdd);
+        
+        card.appendChild(photo);
+        card.appendChild(nameElement);
+        card.appendChild(dateElement);
         container.appendChild(card);
       });
+
+      updateLastUpdatedTime();
     }
 
-    // Initialize
+    // Initial Fetch
     fetchStudentBirthdays();
     fetchStaffBirthdays();
-    updateLastUpdatedTime();
 
     // Auto-refresh every 15 minutes
     setInterval(() => {
       fetchStudentBirthdays();
       fetchStaffBirthdays();
-      updateLastUpdatedTime();
     }, 15 * 60 * 1000);
   </script>
 </body>
