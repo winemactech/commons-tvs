@@ -180,6 +180,7 @@
 
   <script>
     const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
+    const workshopCalendarJsonUrl = "https://calendar.google.com/calendar/feeds/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic?alt=json";
 
     const CACHE_KEY = 'wem_workshops_cache';
     let scrollInterval = null;
@@ -197,7 +198,7 @@
     }
 
     function formatDateForDisplay(dateObj) {
-      if (!dateObj) return "TBD";
+      if (!dateObj || isNaN(dateObj.getTime())) return "TBD";
       
       return dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
@@ -257,7 +258,7 @@
     }
 
     async function tryFetchRawICS() {
-      // 1. Try corsproxy.io raw
+      // Proxy 1: corsproxy.io
       try {
         const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`);
         if (res.ok) {
@@ -266,7 +267,7 @@
         }
       } catch(e) {}
 
-      // 2. Try allorigins.win raw
+      // Proxy 2: Allorigins raw
       try {
         const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`);
         if (res.ok) {
@@ -275,7 +276,7 @@
         }
       } catch(e) {}
 
-      // 3. Fallback: allorigins.win JSON API wrapper
+      // Proxy 3: Allorigins JSON wrapper
       try {
         const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(workshopCalendarIcalUrl)}`);
         if (res.ok) {
@@ -290,22 +291,24 @@
     }
 
     async function fetchEventsWithRetry() {
-      // 1. Immediately render cached schedule if available
+      // 1. Render cached data immediately if available
       const cached = localStorage.getItem(CACHE_KEY);
       let loadedFromCache = false;
 
       if (cached) {
         try {
           const { icsData, time } = JSON.parse(cached);
-          parseAndRenderICS(icsData);
-          updateLastUpdatedTime(time);
-          loadedFromCache = true;
+          if (icsData) {
+            parseAndRenderICS(icsData);
+            updateLastUpdatedTime(time);
+            loadedFromCache = true;
+          }
         } catch (e) {
           console.error("Cache read error:", e);
         }
       }
 
-      // 2. Fetch fresh workshop data in background
+      // 2. Fetch fresh workshop data from net
       const freshICS = await tryFetchRawICS();
 
       if (freshICS) {
@@ -315,7 +318,7 @@
         parseAndRenderICS(freshICS);
         updateLastUpdatedTime(cachePayload.time);
       } else if (!loadedFromCache) {
-        // Fallback display if network fails and no local cache exists
+        // Render fallback empty view without throwing full screen errors
         parseAndRenderICS("");
       }
     }
@@ -355,12 +358,14 @@
         }
       });
 
+      // Filter events from 3 days ago through the future to tolerate clock drift on players
       const now = new Date();
-      // Show events starting from 12 hours ago through the future
+      const threeDaysAgo = now.getTime() - (72 * 60 * 60 * 1000);
+
       const upcomingEvents = events
-        .filter(evt => evt.timestamp >= now.getTime() - (12 * 60 * 60 * 1000))
+        .filter(evt => evt.timestamp >= threeDaysAgo)
         .sort((a, b) => a.timestamp - b.timestamp)
-        .slice(0, 25);
+        .slice(0, 30);
 
       if (upcomingEvents.length === 0) {
         container.innerHTML = '<div class="loading-message">No upcoming workshops scheduled.</div>';
@@ -389,6 +394,7 @@
     }
 
     fetchEventsWithRetry();
+    setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
   </script>
 </body>
 </html>
