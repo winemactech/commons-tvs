@@ -12,13 +12,6 @@
       --patriots-white: #FFFFFF;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    /* Absolute Layout Reset & Standardized Outer Spacing */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -35,12 +28,11 @@
     }
 
     body {
-      padding: 2.5rem; /* Strict fixed padding locks top and left alignment on every screen */
+      padding: 2.5rem;
       display: flex;
       flex-direction: column;
     }
 
-    /* Standardized Locked Header Block */
     header {
       display: flex;
       align-items: center;
@@ -96,7 +88,7 @@
       border-radius: 8px;
       padding: clamp(1rem, 1.8%, 1.4rem) clamp(1.2rem, 2%, 1.8rem);
       display: grid;
-      grid-template-columns: 1.2fr 2fr 1.3fr;
+      grid-template-columns: 1.2fr 2fr 2fr;
       gap: clamp(1rem, 2%, 2rem);
       align-items: center;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -166,7 +158,7 @@
 
   <header>
     <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
-    <h1>Lunch Menu</h1>
+    <h1>Breakfast &amp; Lunch</h1>
   </header>
 
   <div class="events-wrapper">
@@ -218,31 +210,39 @@
       initScroll();
     }
 
-    function parseCSV(text) {
-      const lines = [];
-      let entry = '';
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
       let inQuotes = false;
 
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (c === '"') {
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
           inQuotes = !inQuotes;
-        } else if ((c === '\n' || c === '\r') && !inQuotes) {
-          if (entry.trim()) lines.push(entry.trim());
-          entry = '';
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+          current = '';
         } else {
-          entry += c;
+          current += char;
         }
       }
-      if (entry.trim()) lines.push(entry.trim());
-      
+      result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+      return result;
+    }
+
+    function parseCSV(text) {
+      if (!text || !text.trim()) return [];
+      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
       if (lines.length < 2) return [];
+
+      const headers = parseCSVLine(lines[0]).map(h => h.trim());
       
-      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
       return lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+        const values = parseCSVLine(line);
         const obj = {};
-        headers.forEach((h, i) => obj[h] = values[i] || '');
+        headers.forEach((h, i) => {
+          obj[h] = values[i] !== undefined ? values[i].trim() : '';
+        });
         return obj;
       });
     }
@@ -271,7 +271,7 @@
       } catch (error) {
         console.warn("Menu fetch error:", error);
         if (!cached) {
-          displayError("Unable to load lunch menu.");
+          displayError("Unable to load menu. Please check connection.");
         }
       }
     }
@@ -281,32 +281,55 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
+    function getValueByKeys(row, possibleKeys) {
+      const rowKeys = Object.keys(row);
+      for (const targetKey of possibleKeys) {
+        const foundKey = rowKeys.find(k => k.toLowerCase() === targetKey.toLowerCase());
+        if (foundKey && row[foundKey]) {
+          return row[foundKey];
+        }
+      }
+      return '';
+    }
+
     function renderMenu(rows) {
       const container = document.getElementById('scroll-container');
       container.innerHTML = '';
 
       if (!rows || rows.length === 0) {
-        container.innerHTML = '<div class="loading-message">No menu items listed.</div>';
+        container.innerHTML = '<div class="loading-message">No menu items posted today.</div>';
         return;
       }
 
+      let validCardCount = 0;
+
       rows.forEach(row => {
-        const date = row['Date'] || row['Day'] || '';
-        const mainItem = row['Main'] || row['Menu Item'] || row['Entree'] || row['Item'] || '';
-        const sides = row['Sides'] || row['Side'] || row['Extras'] || '';
+        const date = getValueByKeys(row, ['Date', 'Day', 'Day of Week']);
+        const breakfast = getValueByKeys(row, ['Breakfast', 'Morning Menu', 'Breakfast Item']);
+        const lunch = getValueByKeys(row, ['Lunch', 'Main', 'Menu Item', 'Entree', 'Item']);
+        const sides = getValueByKeys(row, ['Sides', 'Side', 'Extras']);
 
-        if (!mainItem.trim() && !date.trim()) return;
+        if (!date && !breakfast && !lunch) return;
 
+        validCardCount++;
         const card = document.createElement('div');
         card.className = 'event-card';
-        
+
+        let secondColText = lunch ? `Lunch: ${lunch}` : (sides ? `Sides: ${sides}` : '');
+        let thirdColText = breakfast ? `Breakfast: ${breakfast}` : (sides && lunch ? `Sides: ${sides}` : '');
+
         card.innerHTML = `
-          <div class="event-datetime">${escapeHtml(date)}</div>
-          <div class="event-title">${escapeHtml(mainItem)}</div>
-          <div class="event-location">${sides ? escapeHtml(sides) : ''}</div>
+          <div class="event-datetime">${escapeHtml(date || 'Today')}</div>
+          <div class="event-title">${escapeHtml(secondColText || 'See Cafeteria Schedule')}</div>
+          <div class="event-location">${escapeHtml(thirdColText)}</div>
         `;
         container.appendChild(card);
       });
+
+      if (validCardCount === 0) {
+        container.innerHTML = '<div class="loading-message">No upcoming menu entries scheduled.</div>';
+        return;
+      }
 
       startAutoScroll();
     }
