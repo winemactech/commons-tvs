@@ -217,14 +217,21 @@
       });
     }
 
+    // Robust iCal Date Parser (handles DTSTART;TZID=..., ALL-DAY dates, UTC, and local times)
     function parseICalDate(dateStr) {
       if (!dateStr) return null;
       const cleanStr = dateStr.trim();
-      const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})/);
+      
+      const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/);
       if (!match) return null;
 
-      const [, year, month, day] = match;
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const [, year, month, day, hour = "00", minute = "00", second = "00", isUtc] = match;
+
+      if (isUtc) {
+        return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second)));
+      } else {
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
+      }
     }
 
     function unfoldICS(icsData) {
@@ -245,84 +252,77 @@
         .filter(line => line.length > 0 && !line.toLowerCase().startsWith('http'));
     }
 
-    async function fetchWithTimeout(url, timeoutMs = 4000) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        return response;
-      } catch (err) {
-        clearTimeout(id);
-        throw err;
-      }
-    }
+    // Direct JSONP loader to bypass CORS / iframe fetch restrictions inside player.ablesign.tv
+    function fetchICSViaJSONP() {
+      return new Promise((resolve) => {
+        const callbackName = 'handleMenuCalendarResponse_' + Math.floor(Math.random() * 1000000);
+        const script = document.createElement('script');
+        let resolved = false;
 
-    async function tryFetchRawICS() {
-      // Endpoint 1: corsproxy.io
-      try {
-        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(calendarUrl)}`);
-        if (res.ok) {
-          const txt = await res.text();
-          if (txt.includes('BEGIN:VCALENDAR')) return txt;
-        }
-      } catch(e) {}
-
-      // Endpoint 2: allorigins raw
-      try {
-        const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`);
-        if (res.ok) {
-          const txt = await res.text();
-          if (txt.includes('BEGIN:VCALENDAR')) return txt;
-        }
-      } catch(e) {}
-
-      // Endpoint 3: allorigins JSON API
-      try {
-        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.contents && json.contents.includes('BEGIN:VCALENDAR')) {
-            return json.contents;
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(null);
           }
-        }
-      } catch(e) {}
+        }, 6000);
 
-      // Endpoint 4: cors-anywhere proxy fallback
-      try {
-        const res = await fetchWithTimeout(`https://cors-anywhere.herokuapp.com/${calendarUrl}`);
-        if (res.ok) {
-          const txt = await res.text();
-          if (txt.includes('BEGIN:VCALENDAR')) return txt;
+        function cleanup() {
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeout);
         }
-      } catch(e) {}
 
-      return null;
+        window[callbackName] = function(data) {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            if (data && data.contents && data.contents.includes('BEGIN:VCALENDAR')) {
+              resolve(data.contents);
+            } else {
+              resolve(null);
+            }
+          }
+        };
+
+        script.src = `https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}&callback=${callbackName}`;
+        script.onerror = function() {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(null);
+          }
+        };
+
+        document.body.appendChild(script);
+      });
     }
 
     async function fetchMenuCalendar() {
-      // 1. Render immediately from local storage if available
+      // 1. Immediately render cached data if present
       const cached = localStorage.getItem(CACHE_KEY);
       let loadedFromCache = false;
 
       if (cached) {
         try {
           const { icsData, time } = JSON.parse(cached);
-          parseAndRenderCalendarMenu(icsData);
-          updateLastUpdatedTime(time);
-          loadedFromCache = true;
+          if (icsData) {
+            parseAndRenderCalendarMenu(icsData);
+            updateLastUpdatedTime(time);
+            loadedFromCache = true;
+          }
         } catch (e) {
           console.error("Cache read error:", e);
         }
       }
 
-      // If no cache, draw the 3 menu cards immediately (never display a full screen error)
+      // If no cache, draw the empty 3 menu cards immediately
       if (!loadedFromCache) {
         parseAndRenderCalendarMenu("");
       }
 
-      // 2. Fetch fresh calendar data in background
-      const freshICS = await tryFetchRawICS();
+      // 2. Fetch fresh calendar data via JSONP
+      const freshICS = await fetchICSViaJSONP();
 
       if (freshICS) {
         const cachePayload = { icsData: freshICS, time: Date.now() };
@@ -355,12 +355,13 @@
 
         events.slice(1).forEach(block => {
           const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
-          const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
+          // Extracts raw date string regardless of DTSTART parameter formatting (e.g. DTSTART;TZID=...:20260825)
+          const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:([^\r\n]+)/m);
           const descriptionMatch = block.match(/^DESCRIPTION:(.*)$/m);
 
           if (dtstartMatch) {
-            const eventDate = parseICalDate(dtstartMatch[1]);
-            if (!eventDate) return;
+            const eventDate = parseICalDate(dtstartMatch[1].trim());
+            if (!eventDate || isNaN(eventDate.getTime())) return;
 
             const summary = summaryMatch ? summaryMatch[1].trim() : '';
             const description = descriptionMatch ? descriptionMatch[1].trim() : '';
@@ -387,7 +388,6 @@
       const nextSchoolDay = getNextSchoolDay(today);
       const nextDayName = (today.getDay() === 5 || today.getDay() === 6) ? "Monday's" : "Tomorrow's";
 
-      // Guarantees the 3 menu columns always render
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
