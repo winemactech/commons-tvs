@@ -179,15 +179,10 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const boundIcalUrl = "https://gobound.com/mn/schools/winemac/calendar/ical/2417b68941d2412";
-    
-    // Uses faster CORS proxies with strict fallback
-    const proxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(boundIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`
-    ];
-
+    // Direct static source hosted in repository (No CORS proxy needed)
+    const localIcsUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/events.ics";
     const CACHE_KEY = 'wem_events_cache';
+
     let scrollInterval = null;
     let scrollDelay = null;
 
@@ -249,59 +244,37 @@
       initScroll();
     }
 
-    // Helper: Fetch with a strict timeout (e.g., 3.5s)
-    async function fetchWithTimeout(url, timeoutMs = 3500) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        return response;
-      } catch (err) {
-        clearTimeout(id);
-        throw err;
-      }
-    }
-
-    async function fetchEventsWithRetry() {
-      // 1. Instantly render from local cache if present
+    async function fetchEvents() {
+      // 1. Render immediately from local storage cache if available
       const cached = localStorage.getItem(CACHE_KEY);
-      let loadedFromCache = false;
-
       if (cached) {
         try {
           const { icsData, time } = JSON.parse(cached);
           parseAndRenderICS(icsData);
           updateLastUpdatedTime(time);
-          loadedFromCache = true;
         } catch (e) {
           console.error("Cache read error:", e);
         }
       }
 
-      // 2. Fetch fresh data in parallel or fallback with fast timeouts
-      for (let i = 0; i < proxyUrls.length; i++) {
-        try {
-          const response = await fetchWithTimeout(proxyUrls[i], 3500);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          
-          const data = await response.text();
-          
-          // Save to local cache for instant loading next loop
-          const cachePayload = { icsData: data, time: Date.now() };
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
+      // 2. Fast direct fetch from raw static GitHub asset
+      try {
+        const response = await fetch(localIcsUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.text();
+        
+        // Cache new data locally
+        const cachePayload = { icsData: data, time: Date.now() };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
 
-          parseAndRenderICS(data);
-          updateLastUpdatedTime(cachePayload.time);
-          return;
-        } catch (error) {
-          console.warn(`Proxy ${i + 1} timed out or failed:`, error);
+        parseAndRenderICS(data);
+        updateLastUpdatedTime(cachePayload.time);
+      } catch (error) {
+        console.warn("Static file fetch error:", error);
+        if (!cached) {
+          displayError("Unable to load events schedule.");
         }
-      }
-
-      // 3. Fallback if network failed and no cache existed
-      if (!loadedFromCache) {
-        displayError("Unable to load events schedule.");
       }
     }
 
@@ -316,8 +289,7 @@
 
     function parseAndRenderICS(icsData) {
       const container = document.getElementById('scroll-container');
-      container.innerHTML = '';
-
+      
       const unfoldedData = parseAndUnfoldICS(icsData);
       const events = [];
       const blocks = unfoldedData.split('BEGIN:VEVENT');
@@ -351,6 +323,7 @@
         return;
       }
 
+      container.innerHTML = '';
       upcomingEvents.forEach(evt => {
         const card = document.createElement('div');
         card.className = 'event-card';
@@ -372,8 +345,8 @@
       return div.innerHTML;
     }
 
-    // Execute immediately on load
-    fetchEventsWithRetry();
+    // Execute immediately on page load
+    fetchEvents();
   </script>
 </body>
 </html>
