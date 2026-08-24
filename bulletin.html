@@ -67,114 +67,89 @@
       line-height: 1.1;
       white-space: nowrap;
     }
+
     .bulletin-wrapper {
       flex: 1;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .bulletin-scroll-container {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(1rem, 1.8%, 1.25rem);
+      padding-right: clamp(0.5rem, 1%, 1rem);
+      overflow-y: auto;
       min-height: 0;
     }
 
     .bulletin-card {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 10px solid var(--patriots-red);
-      border-radius: 16px;
-      padding: clamp(1.25rem, 2.5vh, 2rem) clamp(1.5rem, 3vw, 3rem);
-      flex: 1;
+      border-left: 8px solid var(--patriots-red);
+      border-top: 1px solid rgba(176, 183, 188, 0.15);
+      border-right: 1px solid rgba(176, 183, 188, 0.15);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
+      border-radius: 8px;
+      padding: clamp(1.2rem, 2%, 1.6rem);
       display: flex;
       flex-direction: column;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-      position: relative;
-    }
-
-    .bulletin-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: clamp(0.75rem, 1.5vh, 1.25rem);
-      border-bottom: 2px solid rgba(176, 183, 188, 0.25);
-      padding-bottom: clamp(0.5rem, 1vh, 0.75rem);
+      gap: 0.6rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       flex-shrink: 0;
     }
 
-    .bulletin-date {
-      font-size: clamp(1.4rem, 2.8vh, 2.2rem);
+    .bulletin-title {
+      font-size: clamp(1.2rem, 2.4vw, 1.6rem);
       font-weight: 800;
+      color: var(--patriots-white);
+      line-height: 1.2;
+    }
+
+    .bulletin-body {
+      font-size: clamp(1rem, 1.8vw, 1.25rem);
       color: var(--patriots-silver);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .slide-counter {
-      background-color: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--patriots-silver);
-      color: var(--patriots-white);
-      padding: 0.4rem 1.2rem;
-      border-radius: 50px;
-      font-size: clamp(1.1rem, 2.2vh, 1.6rem);
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-
-    .content-viewport {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-      width: 100%;
-    }
-
-    .bulletin-content {
-      width: 100%;
-      text-align: center;
-      line-height: 1.12;
-      font-weight: 800;
-      color: var(--patriots-white);
+      line-height: 1.4;
       white-space: pre-wrap;
-      word-break: break-word;
-      opacity: 1;
-      transition: opacity 0.35s ease-in-out, transform 0.35s ease-in-out;
-      transform: translateY(0);
     }
 
-    .bulletin-content.fade-out {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-
-    .pending-notice, .error-notice {
+    .error-message, .loading-message {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 10px solid var(--patriots-silver);
-      border-radius: 16px;
-      padding: 3rem;
-      font-size: clamp(2rem, 5vh, 3.5rem);
-      font-weight: 700;
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 8px;
+      padding: 1.5rem;
+      font-size: clamp(1rem, 2vw, 1.3rem);
       color: var(--patriots-white);
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     }
 
-    .pending-subtitle {
-      font-size: clamp(1.2rem, 2.5vh, 1.8rem);
-      font-weight: 400;
-      color: var(--patriots-silver);
-      margin-top: 1.5rem;
+    .error-message {
+      background-color: rgba(198, 12, 48, 0.2);
+    }
+
+    /* Scrollbar Styling */
+    .bulletin-scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .bulletin-scroll-container::-webkit-scrollbar-track {
+      background: rgba(176, 183, 188, 0.1);
+      border-radius: 3px;
+    }
+
+    .bulletin-scroll-container::-webkit-scrollbar-thumb {
+      background: var(--patriots-red);
+      border-radius: 3px;
     }
 
     footer {
-      margin-top: clamp(1rem, 2vh, 1.5rem);
-      padding-top: clamp(0.5rem, 1vh, 0.75rem);
+      margin-top: clamp(1rem, 2%, 1.5rem);
+      padding-top: clamp(0.5rem, 1%, 0.75rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.9rem, 1.5vh, 1.1rem);
+      font-size: clamp(0.8rem, 1.2vw, 1rem);
       opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
@@ -188,246 +163,173 @@
     <h1>Daily Bulletin</h1>
   </header>
 
-  <div class="bulletin-wrapper" id="bulletin-container">
-    <div class="pending-notice">
-      Checking for today's bulletin...
+  <div class="bulletin-wrapper">
+    <div class="bulletin-scroll-container" id="scroll-container">
+      <div class="loading-message">Loading announcements...</div>
     </div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuH1BgocMX1hFpZ2PKK8Hjn4o_-AvtfGTMY1t6sdMWsGmFvCv8tQjOQu29-bgkAyLpL3uTtaNnmpVj/pub?gid=0&single=true&output=csv";
+    // Live direct link to published Google Sheet CSV
+    const liveBulletinCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5K9W9X4J1d_JmN9Y68z8a2k0B5lC1n_8Y9I4dKx0M0rF9G8H/pub?output=csv";
+    const CACHE_KEY = 'wem_bulletin_cache';
 
-    const fetchEndpoints = [
-      sheetCsvUrl,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetCsvUrl)}`,
-      `https://corsproxy.io/?${encodeURIComponent(sheetCsvUrl)}`
-    ];
+    let scrollInterval = null;
+    let scrollDelay = null;
 
-    let itemsList = [];
-    let currentIndex = 0;
-    let rotationTimer = null;
-    let formattedDateString = '';
-    let globalFontSize = 48; // Stores uniform font size for all slides
-
-    function updateLastUpdatedTime() {
-      const now = new Date();
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+    function updateLastUpdatedTime(timestamp) {
+      const displayDate = timestamp ? new Date(timestamp) : new Date();
+      document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago'
       });
     }
 
-    function isToday(dateString) {
-      if (!dateString) return false;
-      const cleanDate = dateString.trim().replace(/^"|"$/g, '');
-      const parsedDate = new Date(cleanDate);
-      if (isNaN(parsedDate.getTime())) return false;
+    function startAutoScroll() {
+      const container = document.getElementById('scroll-container');
+      
+      if (scrollInterval) clearInterval(scrollInterval);
+      if (scrollDelay) clearTimeout(scrollDelay);
 
-      const today = new Date();
-      return parsedDate.getFullYear() === today.getFullYear() &&
-             parsedDate.getMonth() === today.getMonth() &&
-             parsedDate.getDate() === today.getDate();
+      function initScroll() {
+        if (container.scrollHeight <= container.clientHeight) return;
+
+        scrollDelay = setTimeout(() => {
+          scrollInterval = setInterval(() => {
+            container.scrollTop += 1;
+
+            if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+              clearInterval(scrollInterval);
+              setTimeout(() => {
+                container.scrollTop = 0;
+                initScroll();
+              }, 2000);
+            }
+          }, 40);
+        }, 2000);
+      }
+
+      initScroll();
     }
 
-    function parseCSV(csvText) {
+    function parseCSV(text) {
       const lines = [];
-      let currentRow = [];
-      let currentToken = '';
-      let insideQuotes = false;
+      let entry = '';
+      let inQuotes = false;
 
-      for (let i = 0; i < csvText.length; i++) {
-        const char = csvText[i];
-        const nextChar = csvText[i + 1];
-
-        if (char === '"') {
-          if (insideQuotes && nextChar === '"') {
-            currentToken += '"';
-            i++;
-          } else {
-            insideQuotes = !insideQuotes;
-          }
-        } else if (char === ',' && !insideQuotes) {
-          currentRow.push(currentToken.trim());
-          currentToken = '';
-        } else if ((char === '\r' || char === '\n') && !insideQuotes) {
-          if (char === '\r' && nextChar === '\n') i++;
-          currentRow.push(currentToken.trim());
-          if (currentRow.length > 0) lines.push(currentRow);
-          currentRow = [];
-          currentToken = '';
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === '"') {
+          inQuotes = !inQuotes;
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (entry.trim()) lines.push(entry.trim());
+          entry = '';
         } else {
-          currentToken += char;
+          entry += c;
         }
       }
-      if (currentToken || currentRow.length > 0) {
-        currentRow.push(currentToken.trim());
-        lines.push(currentRow);
+      if (entry.trim()) lines.push(entry.trim());
+      
+      if (lines.length < 2) return [];
+      
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+      return lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = values[i] || '');
+        return obj;
+      });
+    }
+
+    async function fetchWithTimeout(url, timeoutMs = 1500) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
       }
-      return lines;
     }
 
     async function fetchBulletin() {
-      for (let endpoint of fetchEndpoints) {
+      // 1. Instant Cache Render (0ms latency for AbleSign)
+      const cached = localStorage.getItem(CACHE_KEY);
+      let loadedFromCache = false;
+
+      if (cached) {
         try {
-          const response = await fetch(endpoint);
-          if (!response.ok) throw new Error(`HTTP Status ${response.status}`);
-          
-          const rawCsv = await response.text();
-          const parsedRows = parseCSV(rawCsv);
-
-          const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
-
-          if (isToday(sheetDateStr)) {
-            const cleanDate = sheetDateStr.trim().replace(/^"|"$/g, '');
-            formattedDateString = new Date(cleanDate).toLocaleDateString('en-US', {
-              weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-            });
-
-            const extractedItems = [];
-            for (let row of parsedRows) {
-              if (row[1] && row[1].trim().length > 0) {
-                extractedItems.push(row[1].trim());
-              }
-            }
-
-            if (JSON.stringify(extractedItems) !== JSON.stringify(itemsList)) {
-              itemsList = extractedItems;
-              currentIndex = 0;
-              setupCardStructure();
-              calculateGlobalFontSize();
-              startRotation();
-            }
-          } else {
-            stopRotation();
-            renderPendingNotice();
-          }
-
-          updateLastUpdatedTime();
-          return;
-        } catch (error) {
-          console.warn("Fetch attempt failed, trying fallback...", error);
+          const { csv, time } = JSON.parse(cached);
+          renderBulletin(parseCSV(csv));
+          updateLastUpdatedTime(time);
+          loadedFromCache = true;
+        } catch (e) {
+          console.error("Cache read error:", e);
         }
       }
 
-      stopRotation();
-      displayError("Unable to load daily bulletin. Please check your Google Sheet publish settings.");
-    }
-
-    function setupCardStructure() {
-      const container = document.getElementById('bulletin-container');
-      container.innerHTML = `
-        <div class="bulletin-card">
-          <div class="bulletin-header-row">
-            <div class="bulletin-date">${formattedDateString}</div>
-            <div class="slide-counter" id="slide-counter">1 of ${itemsList.length}</div>
-          </div>
-          <div class="content-viewport" id="viewport">
-            <div class="bulletin-content" id="bulletin-text"></div>
-          </div>
-        </div>
-      `;
-    }
-
-    // Calculates the ideal font size for the LONGEST announcement, then locks it for all items
-    function calculateGlobalFontSize() {
-      const textEl = document.getElementById('bulletin-text');
-      const viewportEl = document.getElementById('viewport');
-      if (!textEl || !viewportEl || itemsList.length === 0) return;
-
-      const maxHeight = viewportEl.clientHeight;
-      const maxWidth = viewportEl.clientWidth;
-
-      let smallestFitSize = 110;
-
-      // Find the best fit for EACH slide, keeping the minimum calculated value overall
-      itemsList.forEach(text => {
-        textEl.textContent = text;
+      // 2. Real-time Live Fetch with strict 1.5-second timeout limit
+      try {
+        const response = await fetchWithTimeout(liveBulletinCsvUrl, 1500);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        let minSize = 28;
-        let maxSize = 110;
-        let optimalSize = minSize;
-
-        while (minSize <= maxSize) {
-          let mid = Math.floor((minSize + maxSize) / 2);
-          textEl.style.fontSize = mid + 'px';
-
-          if (textEl.scrollHeight <= maxHeight && textEl.scrollWidth <= maxWidth) {
-            optimalSize = mid;
-            minSize = mid + 1;
-          } else {
-            maxSize = mid - 1;
-          }
-        }
-
-        if (optimalSize < smallestFitSize) {
-          smallestFitSize = optimalSize;
-        }
-      });
-
-      globalFontSize = smallestFitSize;
-      displayCurrentSlide();
-    }
-
-    function displayCurrentSlide() {
-      const textEl = document.getElementById('bulletin-text');
-      const counterEl = document.getElementById('slide-counter');
-
-      if (!textEl) return;
-
-      textEl.classList.add('fade-out');
-
-      setTimeout(() => {
-        textEl.textContent = itemsList[currentIndex] || '';
-        textEl.style.fontSize = globalFontSize + 'px'; // Apply uniform font size
-
-        if (counterEl) {
-          counterEl.textContent = `${currentIndex + 1} of ${itemsList.length}`;
-        }
+        const csvText = await response.text();
         
-        textEl.classList.remove('fade-out');
-      }, 250);
-    }
-
-    function startRotation() {
-      stopRotation();
-      if (itemsList.length <= 1) return;
-
-      rotationTimer = setInterval(() => {
-        currentIndex = (currentIndex + 1) % itemsList.length;
-        displayCurrentSlide();
-      }, 10000);
-    }
-
-    function stopRotation() {
-      if (rotationTimer) {
-        clearInterval(rotationTimer);
-        rotationTimer = null;
+        // Cache newly retrieved bulletin
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csvText, time: Date.now() }));
+        renderBulletin(parseCSV(csvText));
+        updateLastUpdatedTime(Date.now());
+      } catch (error) {
+        console.warn("Live fetch timed out or failed. Utilizing cache fallback:", error);
+        if (!loadedFromCache) {
+          displayError("Unable to load daily bulletin.");
+        }
       }
-    }
-
-    function renderPendingNotice() {
-      const container = document.getElementById('bulletin-container');
-      container.innerHTML = `
-        <div class="pending-notice">
-          Today's bulletin has not been published yet.
-          <div class="pending-subtitle">Please check back later for announcements.</div>
-        </div>
-      `;
     }
 
     function displayError(message) {
-      document.getElementById('bulletin-container').innerHTML = `
-        <div class="error-notice">${message}</div>
-      `;
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    window.addEventListener('resize', () => {
-      calculateGlobalFontSize();
-    });
+    function renderBulletin(rows) {
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        container.innerHTML = '<div class="loading-message">No announcements posted for today.</div>';
+        return;
+      }
+
+      rows.forEach(row => {
+        const title = row['Title'] || row['Announcement'] || row['Header'] || '';
+        const body = row['Details'] || row['Body'] || row['Description'] || row['Message'] || '';
+
+        if (!title.trim() && !body.trim()) return;
+
+        const card = document.createElement('div');
+        card.className = 'bulletin-card';
+        
+        card.innerHTML = `
+          ${title ? `<div class="bulletin-title">${escapeHtml(title)}</div>` : ''}
+          ${body ? `<div class="bulletin-body">${escapeHtml(body)}</div>` : ''}
+        `;
+        container.appendChild(card);
+      });
+
+      startAutoScroll();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
     fetchBulletin();
-    setInterval(fetchBulletin, 15 * 60 * 1000);
   </script>
 </body>
 </html>
