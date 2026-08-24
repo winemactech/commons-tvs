@@ -12,13 +12,6 @@
       --patriots-white: #FFFFFF;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    /* Absolute Layout Reset & Standardized Outer Spacing */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -35,12 +28,11 @@
     }
 
     body {
-      padding: 2.5rem; /* Strict fixed padding locks top and left alignment on every screen */
+      padding: 2.5rem;
       display: flex;
       flex-direction: column;
     }
 
-    /* Standardized Locked Header Block */
     header {
       display: flex;
       align-items: center;
@@ -136,7 +128,6 @@
       background-color: rgba(198, 12, 48, 0.2);
     }
 
-    /* Scrollbar Styling */
     .events-scroll-container::-webkit-scrollbar {
       width: 6px;
     }
@@ -179,7 +170,6 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Direct static URL hosted via GitHub repository
     const workshopsCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/workshops.csv";
     const CACHE_KEY = 'wem_workshops_cache';
 
@@ -244,13 +234,12 @@
       return lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
         const obj = {};
-        headers.forEach((h, i) => obj[h] = values[i] || '');
+        headers.forEach((h, i) => obj[h] = values[i] !== undefined ? values[i] : '');
         return obj;
       });
     }
 
     async function fetchWorkshops() {
-      // 1. Render immediately from local cache if present
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
@@ -262,7 +251,6 @@
         }
       }
 
-      // 2. Fetch fresh static CSV file
       try {
         const response = await fetch(workshopsCsvUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -295,11 +283,14 @@
       }
 
       rows.forEach(row => {
-        const title = row['Workshop'] || row['Title'] || row['Name'] || '';
-        const datetime = row['Date/Time'] || row['Date'] || row['Time'] || '';
-        const location = row['Location'] || row['Room'] || '';
+        const keys = Object.keys(row);
+        
+        // Exact match attempts with fallbacks to positional column index
+        const title = row['Workshop'] || row['Title'] || row['Name'] || row['Event'] || row[keys[0]] || '';
+        const datetime = row['Date/Time'] || row['Date'] || row['Time'] || row['When'] || row[keys[1]] || '';
+        const location = row['Location'] || row['Room'] || row['Where'] || row[keys[2]] || '';
 
-        if (!title.trim()) return;
+        if (!title.trim() && !datetime.trim()) return;
 
         const card = document.createElement('div');
         card.className = 'event-card';
