@@ -8,6 +8,7 @@
     :root {
       --patriots-navy: #002244;
       --patriots-red: #C60C30;
+      --patriots-blue: #0056B3;
       --patriots-silver: #B0B7BC;
       --patriots-white: #FFFFFF;
     }
@@ -95,6 +96,14 @@
       flex-shrink: 0;
     }
 
+    .event-card.card-blue {
+      border-left-color: var(--patriots-blue);
+    }
+
+    .event-card.card-red {
+      border-left-color: var(--patriots-red);
+    }
+
     .event-datetime {
       font-size: clamp(1rem, 2vw, 1.25rem);
       color: var(--patriots-silver);
@@ -171,10 +180,16 @@
 
   <script>
     const menuCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/menu.csv";
-    const CACHE_KEY = 'wem_menu_cache';
+    const CACHE_KEY = 'wem_menu_cache_v2';
 
     let scrollInterval = null;
     let scrollDelay = null;
+
+    const DEFAULT_MENU_PLACEHOLDERS = [
+      { label: "Breakfast", title: "Regular School Breakfast", detail: "Served Daily in Cafeteria", type: "red" },
+      { label: "Lunch Option 1", title: "Hot Main Line Entrée", detail: "Includes Fresh Garden Bar & Milk", type: "blue" },
+      { label: "Lunch Option 2", title: "Alternate Entrée Option", detail: "Includes Fresh Garden Bar & Milk", type: "red" }
+    ];
 
     function updateLastUpdatedTime(timestamp) {
       const displayDate = timestamp ? new Date(timestamp) : new Date();
@@ -247,6 +262,23 @@
       });
     }
 
+    function renderPlaceholders() {
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = '';
+
+      DEFAULT_MENU_PLACEHOLDERS.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `event-card ${item.type === 'blue' ? 'card-blue' : 'card-red'}`;
+        
+        card.innerHTML = `
+          <div class="event-datetime">${escapeHtml(item.label)}</div>
+          <div class="event-title">${escapeHtml(item.title)}</div>
+          <div class="event-location">${escapeHtml(item.detail)}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
     async function fetchMenu() {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -271,14 +303,9 @@
       } catch (error) {
         console.warn("Menu fetch error:", error);
         if (!cached) {
-          displayError("Unable to load menu. Please check connection.");
+          renderPlaceholders();
         }
       }
-    }
-
-    function displayError(message) {
-      const container = document.getElementById('scroll-container');
-      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
     function getValueByKeys(row, possibleKeys) {
@@ -297,7 +324,7 @@
       container.innerHTML = '';
 
       if (!rows || rows.length === 0) {
-        container.innerHTML = '<div class="loading-message">No menu items posted today.</div>';
+        renderPlaceholders();
         return;
       }
 
@@ -327,7 +354,7 @@
       });
 
       if (validCardCount === 0) {
-        container.innerHTML = '<div class="loading-message">No upcoming menu entries scheduled.</div>';
+        renderPlaceholders();
         return;
       }
 
