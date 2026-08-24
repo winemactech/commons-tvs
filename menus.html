@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Win-E-Mac Breakfast & Lunch</title>
+  <title>Win-E-Mac Patriot Menu</title>
   <style>
     :root {
       --patriots-navy: #002244;
       --patriots-red: #C60C30;
       --patriots-silver: #B0B7BC;
       --patriots-white: #FFFFFF;
-      --breakfast-blue: #1E5BA8;
     }
 
     * {
@@ -69,102 +68,86 @@
       white-space: nowrap;
     }
 
-    .menu-wrapper {
+    .events-wrapper {
       flex: 1;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
       min-height: 0;
     }
 
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: clamp(1rem, 3%, 2rem);
+    .events-scroll-container {
       flex: 1;
-      align-items: stretch;
-      min-height: 0;
-    }
-
-    .menu-card {
-      background-color: var(--patriots-red);
-      border: 3px solid var(--patriots-red);
-      border-radius: 12px;
-      padding: clamp(1.2rem, 2%, 2rem);
+      height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      gap: clamp(0.75rem, 1.5%, 1rem);
+      padding-right: clamp(0.5rem, 1%, 1rem);
       overflow-y: auto;
-    }
-
-    .menu-card.breakfast {
-      background-color: var(--breakfast-blue);
-      border-color: var(--breakfast-blue);
-    }
-
-    .menu-card-header {
-      font-size: clamp(1.2rem, 3vw, 1.8rem);
-      font-weight: 800;
-      color: var(--patriots-white);
-      margin-bottom: clamp(0.5rem, 1%, 1rem);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 2px solid var(--patriots-white);
-      padding-bottom: clamp(0.5rem, 1%, 1rem);
-      flex-shrink: 0;
-    }
-
-    .menu-card-date {
-      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-      color: rgba(255, 255, 255, 0.85);
-      margin-bottom: clamp(0.75rem, 1.5%, 1.2rem);
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
-    .menu-items {
-      display: flex;
-      flex-direction: column;
-      gap: clamp(0.5rem, 1%, 0.8rem);
-      flex: 1;
       min-height: 0;
     }
 
-    .menu-item {
-      font-size: clamp(1.05rem, 2.2vw, 1.35rem);
-      color: var(--patriots-white);
-      line-height: 1.4;
-      padding: clamp(0.3rem, 0.5%, 0.5rem) 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .menu-item:last-child {
-      border-bottom: none;
-    }
-
-    .no-menu {
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      color: rgba(255, 255, 255, 0.8);
-      font-style: italic;
-    }
-
-    .loading-notice, .error-notice {
+    .event-card {
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 8px solid var(--patriots-red);
-      border-radius: 12px;
-      padding: clamp(2rem, 4vw, 4rem);
-      font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+      border-top: 1px solid rgba(176, 183, 188, 0.15);
+      border-right: 1px solid rgba(176, 183, 188, 0.15);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
+      border-radius: 8px;
+      padding: clamp(1rem, 1.8%, 1.4rem) clamp(1.2rem, 2%, 1.8rem);
+      display: grid;
+      grid-template-columns: 1.2fr 2fr 1.3fr;
+      gap: clamp(1rem, 2%, 2rem);
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      flex-shrink: 0;
+    }
+
+    .event-datetime {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--patriots-silver);
+      font-weight: 700;
+    }
+
+    .event-title {
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
       font-weight: 700;
       color: var(--patriots-white);
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      line-height: 1.25;
+    }
+
+    .event-location {
+      font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+      color: var(--patriots-silver);
+      font-style: italic;
+      text-align: right;
+    }
+
+    .error-message, .loading-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 8px;
+      padding: 1.5rem;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: var(--patriots-white);
+    }
+
+    .error-message {
+      background-color: rgba(198, 12, 48, 0.2);
+    }
+
+    .events-scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .events-scroll-container::-webkit-scrollbar-track {
+      background: rgba(176, 183, 188, 0.1);
+      border-radius: 3px;
+    }
+
+    .events-scroll-container::-webkit-scrollbar-thumb {
+      background: var(--patriots-red);
+      border-radius: 3px;
     }
 
     footer {
@@ -183,243 +166,149 @@
 
   <header>
     <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
-    <h1>Breakfast & Lunch</h1>
+    <h1>Lunch Menu</h1>
   </header>
 
-  <div class="menu-wrapper" id="menu-container">
-    <div class="loading-notice">Loading menu calendar...</div>
+  <div class="events-wrapper">
+    <div class="events-scroll-container" id="scroll-container">
+      <div class="loading-message">Loading menu...</div>
+    </div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const calendarUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
-    const CACHE_KEY = 'wem_menus_cache';
+    const menuCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/menu.csv";
+    const CACHE_KEY = 'wem_menu_cache';
 
-    function getFormattedDate(date) {
-      return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-    }
-
-    function getNextSchoolDay(startDate) {
-      const nextDay = new Date(startDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      
-      if (nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 2);
-      else if (nextDay.getDay() === 0) nextDay.setDate(nextDay.getDate() + 1);
-      
-      return nextDay;
-    }
+    let scrollInterval = null;
+    let scrollDelay = null;
 
     function updateLastUpdatedTime(timestamp) {
       const displayDate = timestamp ? new Date(timestamp) : new Date();
       document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+        hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago'
       });
     }
 
-    // Robust iCal Date Parser (handles DTSTART;TZID=..., ALL-DAY dates, UTC, and local times)
-    function parseICalDate(dateStr) {
-      if (!dateStr) return null;
-      const cleanStr = dateStr.trim();
+    function startAutoScroll() {
+      const container = document.getElementById('scroll-container');
       
-      const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/);
-      if (!match) return null;
+      if (scrollInterval) clearInterval(scrollInterval);
+      if (scrollDelay) clearTimeout(scrollDelay);
 
-      const [, year, month, day, hour = "00", minute = "00", second = "00", isUtc] = match;
+      function initScroll() {
+        if (container.scrollHeight <= container.clientHeight) return;
 
-      if (isUtc) {
-        return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second)));
-      } else {
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
-      }
-    }
+        scrollDelay = setTimeout(() => {
+          scrollInterval = setInterval(() => {
+            container.scrollTop += 1;
 
-    function unfoldICS(icsData) {
-      return icsData.replace(/\r?\n[ \t]/g, '');
-    }
-
-    function extractDescriptionItems(rawDesc) {
-      if (!rawDesc) return [];
-      const cleaned = rawDesc
-        .replace(/\\n/gi, '\n')
-        .replace(/\\,/g, ',')
-        .replace(/\\;/g, ';')
-        .replace(/\\/g, '');
-
-      return cleaned
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0 && !line.toLowerCase().startsWith('http'));
-    }
-
-    // Direct JSONP loader to bypass CORS / iframe fetch restrictions inside player.ablesign.tv
-    function fetchICSViaJSONP() {
-      return new Promise((resolve) => {
-        const callbackName = 'handleMenuCalendarResponse_' + Math.floor(Math.random() * 1000000);
-        const script = document.createElement('script');
-        let resolved = false;
-
-        const timeout = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve(null);
-          }
-        }, 6000);
-
-        function cleanup() {
-          delete window[callbackName];
-          if (script.parentNode) script.parentNode.removeChild(script);
-          clearTimeout(timeout);
-        }
-
-        window[callbackName] = function(data) {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            if (data && data.contents && data.contents.includes('BEGIN:VCALENDAR')) {
-              resolve(data.contents);
-            } else {
-              resolve(null);
+            if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+              clearInterval(scrollInterval);
+              setTimeout(() => {
+                container.scrollTop = 0;
+                initScroll();
+              }, 2000);
             }
-          }
-        };
+          }, 40);
+        }, 2000);
+      }
 
-        script.src = `https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}&callback=${callbackName}`;
-        script.onerror = function() {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve(null);
-          }
-        };
+      initScroll();
+    }
 
-        document.body.appendChild(script);
+    function parseCSV(text) {
+      const lines = [];
+      let entry = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === '"') {
+          inQuotes = !inQuotes;
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (entry.trim()) lines.push(entry.trim());
+          entry = '';
+        } else {
+          entry += c;
+        }
+      }
+      if (entry.trim()) lines.push(entry.trim());
+      
+      if (lines.length < 2) return [];
+      
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+      return lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = values[i] || '');
+        return obj;
       });
     }
 
-    async function fetchMenuCalendar() {
-      // 1. Immediately render cached data if present
+    async function fetchMenu() {
       const cached = localStorage.getItem(CACHE_KEY);
-      let loadedFromCache = false;
-
       if (cached) {
         try {
-          const { icsData, time } = JSON.parse(cached);
-          if (icsData) {
-            parseAndRenderCalendarMenu(icsData);
-            updateLastUpdatedTime(time);
-            loadedFromCache = true;
-          }
+          const { csv, time } = JSON.parse(cached);
+          renderMenu(parseCSV(csv));
+          updateLastUpdatedTime(time);
         } catch (e) {
           console.error("Cache read error:", e);
         }
       }
 
-      // If no cache, draw the empty 3 menu cards immediately
-      if (!loadedFromCache) {
-        parseAndRenderCalendarMenu("");
-      }
-
-      // 2. Fetch fresh calendar data via JSONP
-      const freshICS = await fetchICSViaJSONP();
-
-      if (freshICS) {
-        const cachePayload = { icsData: freshICS, time: Date.now() };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
-
-        parseAndRenderCalendarMenu(freshICS);
-        updateLastUpdatedTime(cachePayload.time);
+      try {
+        const response = await fetch(menuCsvUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const csvText = await response.text();
+        
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csvText, time: Date.now() }));
+        renderMenu(parseCSV(csvText));
+        updateLastUpdatedTime(Date.now());
+      } catch (error) {
+        console.warn("Menu fetch error:", error);
+        if (!cached) {
+          displayError("Unable to load lunch menu.");
+        }
       }
     }
 
-    function isSameDate(d1, d2) {
-      return d1.getFullYear() === d2.getFullYear() &&
-             d1.getMonth() === d2.getMonth() &&
-             d1.getDate() === d2.getDate();
+    function displayError(message) {
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function parseAndRenderCalendarMenu(icsData) {
-      const container = document.getElementById('menu-container');
-      
-      let todayLunchItems = [];
-      let nextDayBreakfastItems = [];
-      let nextDayLunchItems = [];
+    function renderMenu(rows) {
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = '';
 
-      if (icsData) {
-        const unfolded = unfoldICS(icsData);
-        const events = unfolded.split('BEGIN:VEVENT');
-
-        const today = new Date();
-        const nextSchoolDay = getNextSchoolDay(today);
-
-        events.slice(1).forEach(block => {
-          const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
-          // Extracts raw date string regardless of DTSTART parameter formatting (e.g. DTSTART;TZID=...:20260825)
-          const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:([^\r\n]+)/m);
-          const descriptionMatch = block.match(/^DESCRIPTION:(.*)$/m);
-
-          if (dtstartMatch) {
-            const eventDate = parseICalDate(dtstartMatch[1].trim());
-            if (!eventDate || isNaN(eventDate.getTime())) return;
-
-            const summary = summaryMatch ? summaryMatch[1].trim() : '';
-            const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-
-            const menuList = description ? extractDescriptionItems(description) : [summary];
-            const fullContext = (summary + " " + description).toLowerCase();
-
-            if (isSameDate(eventDate, today)) {
-              if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
-                todayLunchItems.push(...menuList);
-              }
-            } else if (isSameDate(eventDate, nextSchoolDay)) {
-              if (fullContext.includes('breakfast')) {
-                nextDayBreakfastItems.push(...menuList);
-              } else if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
-                nextDayLunchItems.push(...menuList);
-              }
-            }
-          }
-        });
+      if (!rows || rows.length === 0) {
+        container.innerHTML = '<div class="loading-message">No menu items listed.</div>';
+        return;
       }
 
-      const today = new Date();
-      const nextSchoolDay = getNextSchoolDay(today);
-      const nextDayName = (today.getDay() === 5 || today.getDay() === 6) ? "Monday's" : "Tomorrow's";
+      rows.forEach(row => {
+        const date = row['Date'] || row['Day'] || '';
+        const mainItem = row['Main'] || row['Menu Item'] || row['Entree'] || row['Item'] || '';
+        const sides = row['Sides'] || row['Side'] || row['Extras'] || '';
 
-      container.innerHTML = `
-        <div class="menu-grid">
-          <div class="menu-card">
-            <div class="menu-card-header">Today's Lunch</div>
-            <div class="menu-card-date">${getFormattedDate(today)}</div>
-            <div class="menu-items">
-              ${renderMenuItems(todayLunchItems)}
-            </div>
-          </div>
-          
-          <div class="menu-card breakfast">
-            <div class="menu-card-header">${nextDayName} Breakfast</div>
-            <div class="menu-card-date">${getFormattedDate(nextSchoolDay)}</div>
-            <div class="menu-items">
-              ${renderMenuItems(nextDayBreakfastItems)}
-            </div>
-          </div>
-          
-          <div class="menu-card">
-            <div class="menu-card-header">${nextDayName} Lunch</div>
-            <div class="menu-card-date">${getFormattedDate(nextSchoolDay)}</div>
-            <div class="menu-items">
-              ${renderMenuItems(nextDayLunchItems)}
-            </div>
-          </div>
-        </div>
-      `;
-    }
+        if (!mainItem.trim() && !date.trim()) return;
 
-    function renderMenuItems(items) {
-      if (!items || items.length === 0) return '<div class="no-menu">No menu scheduled</div>';
-      return items.map(item => `<div class="menu-item">${escapeHtml(item)}</div>`).join('');
+        const card = document.createElement('div');
+        card.className = 'event-card';
+        
+        card.innerHTML = `
+          <div class="event-datetime">${escapeHtml(date)}</div>
+          <div class="event-title">${escapeHtml(mainItem)}</div>
+          <div class="event-location">${sides ? escapeHtml(sides) : ''}</div>
+        `;
+        container.appendChild(card);
+      });
+
+      startAutoScroll();
     }
 
     function escapeHtml(text) {
@@ -428,8 +317,7 @@
       return div.innerHTML;
     }
 
-    fetchMenuCalendar();
-    setInterval(fetchMenuCalendar, 15 * 60 * 1000);
+    fetchMenu();
   </script>
 </body>
 </html>
