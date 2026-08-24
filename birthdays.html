@@ -280,19 +280,32 @@
 
     function parseDateString(dateStr) {
       if (!dateStr) return null;
-      dateStr = dateStr.trim();
+      dateStr = String(dateStr).trim();
+
+      // Case 1: MMDD or M/D format without slashes or short string (e.g., "0823" or "823")
+      if (/^\d{3,4}$/.test(dateStr)) {
+        const padded = dateStr.padStart(4, '0');
+        const month = parseInt(padded.substring(0, 2));
+        const day = parseInt(padded.substring(2, 4));
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          return { mmdd: padded, year: null, month, day };
+        }
+      }
+      
+      // Case 2: Standard delimited string with slashes (MM/DD or MM/DD/YYYY)
       const parts = dateStr.split('/');
-      
-      if (parts.length < 2) return null;
-      
-      const month = parseInt(parts[0]);
-      const day = parseInt(parts[1]);
-      const year = parts.length === 3 ? parseInt(parts[2]) : null;
-      
-      if (isNaN(month) || isNaN(day)) return null;
-      
-      const mmdd = String(month).padStart(2, '0') + String(day).padStart(2, '0');
-      return { mmdd, year, month, day };
+      if (parts.length >= 2) {
+        const month = parseInt(parts[0]);
+        const day = parseInt(parts[1]);
+        const year = parts.length === 3 ? parseInt(parts[2]) : null;
+        
+        if (!isNaN(month) && !isNaN(day)) {
+          const mmdd = String(month).padStart(2, '0') + String(day).padStart(2, '0');
+          return { mmdd, year, month, day };
+        }
+      }
+
+      return null;
     }
 
     function calculateAge(birthYear) {
@@ -453,7 +466,7 @@
 
       rows.forEach(row => {
         const name = row['Staff Name'] || row['Name'] || '';
-        const birthDate = row['Birthday'] || row['Birth Date'] || '';
+        const birthDate = row['Staff Birthday'] || row['Birthday'] || row['Birth Date'] || '';
 
         const dateInfo = parseDateString(birthDate);
         if (!dateInfo || !name.trim()) return;
