@@ -65,7 +65,6 @@
       min-height: 0;
     }
 
-    /* Container restored to original proportions */
     .bulletin-card {
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 10px solid var(--patriots-red);
@@ -117,7 +116,6 @@
       width: 100%;
     }
 
-    /* Tightened line height allows character scale to jump up significantly */
     .bulletin-content {
       width: 100%;
       text-align: center;
@@ -200,6 +198,7 @@
     let currentIndex = 0;
     let rotationTimer = null;
     let formattedDateString = '';
+    let globalFontSize = 48; // Stores uniform font size for all slides
 
     function updateLastUpdatedTime() {
       const now = new Date();
@@ -285,6 +284,7 @@
               itemsList = extractedItems;
               currentIndex = 0;
               setupCardStructure();
+              calculateGlobalFontSize();
               startRotation();
             }
           } else {
@@ -316,35 +316,46 @@
           </div>
         </div>
       `;
-      displayCurrentSlide();
     }
 
-    function fitTextToContainer() {
+    // Calculates the ideal font size for the LONGEST announcement, then locks it for all items
+    function calculateGlobalFontSize() {
       const textEl = document.getElementById('bulletin-text');
       const viewportEl = document.getElementById('viewport');
-      if (!textEl || !viewportEl) return;
+      if (!textEl || !viewportEl || itemsList.length === 0) return;
 
       const maxHeight = viewportEl.clientHeight;
       const maxWidth = viewportEl.clientWidth;
 
-      // Higher minimum floor and aggressive upper cap to fill screen area
-      let minSize = 48;
-      let maxSize = 110; 
-      let optimalSize = minSize;
+      let smallestFitSize = 110;
 
-      while (minSize <= maxSize) {
-        let mid = Math.floor((minSize + maxSize) / 2);
-        textEl.style.fontSize = mid + 'px';
+      // Find the best fit for EACH slide, keeping the minimum calculated value overall
+      itemsList.forEach(text => {
+        textEl.textContent = text;
+        
+        let minSize = 28;
+        let maxSize = 110;
+        let optimalSize = minSize;
 
-        if (textEl.scrollHeight <= maxHeight && textEl.scrollWidth <= maxWidth) {
-          optimalSize = mid;
-          minSize = mid + 1;
-        } else {
-          maxSize = mid - 1;
+        while (minSize <= maxSize) {
+          let mid = Math.floor((minSize + maxSize) / 2);
+          textEl.style.fontSize = mid + 'px';
+
+          if (textEl.scrollHeight <= maxHeight && textEl.scrollWidth <= maxWidth) {
+            optimalSize = mid;
+            minSize = mid + 1;
+          } else {
+            maxSize = mid - 1;
+          }
         }
-      }
 
-      textEl.style.fontSize = optimalSize + 'px';
+        if (optimalSize < smallestFitSize) {
+          smallestFitSize = optimalSize;
+        }
+      });
+
+      globalFontSize = smallestFitSize;
+      displayCurrentSlide();
     }
 
     function displayCurrentSlide() {
@@ -357,11 +368,12 @@
 
       setTimeout(() => {
         textEl.textContent = itemsList[currentIndex] || '';
+        textEl.style.fontSize = globalFontSize + 'px'; // Apply uniform font size
+
         if (counterEl) {
           counterEl.textContent = `${currentIndex + 1} of ${itemsList.length}`;
         }
         
-        fitTextToContainer();
         textEl.classList.remove('fade-out');
       }, 250);
     }
@@ -399,7 +411,9 @@
       `;
     }
 
-    window.addEventListener('resize', fitTextToContainer);
+    window.addEventListener('resize', () => {
+      calculateGlobalFontSize();
+    });
 
     fetchBulletin();
     setInterval(fetchBulletin, 15 * 60 * 1000);
