@@ -23,9 +23,8 @@
       background-color: var(--patriots-navy);
       color: var(--patriots-white);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      padding: 2rem 3rem;
-      height: 100vh;
-      overflow: hidden;
+      padding: clamp(1rem, 3%, 3rem);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -33,19 +32,20 @@
     header {
       display: flex;
       align-items: center;
-      gap: 2rem;
+      gap: clamp(1rem, 2%, 2rem);
       border-bottom: 3px solid var(--patriots-red);
-      padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
+      padding-bottom: clamp(0.75rem, 2%, 1.5rem);
+      margin-bottom: clamp(1rem, 2%, 2rem);
+      flex-shrink: 0;
     }
 
     .logo {
-      height: 80px;
+      height: clamp(50px, 12vw, 100px);
       width: auto;
     }
 
     h1 {
-      font-size: 3rem;
+      font-size: clamp(1.5rem, 6vw, 3rem);
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -57,21 +57,23 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      min-height: 0;
     }
 
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: clamp(1rem, 3%, 2rem);
       flex: 1;
       align-items: stretch;
+      min-height: 0;
     }
 
     .menu-card {
       background-color: var(--patriots-red);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
-      padding: 2rem;
+      padding: clamp(1rem, 2%, 2rem);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -85,21 +87,21 @@
     }
 
     .menu-card-header {
-      font-size: 1.8rem;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
       font-weight: 800;
       color: var(--patriots-white);
-      margin-bottom: 1.5rem;
+      margin-bottom: clamp(0.75rem, 1.5%, 1.5rem);
       text-transform: uppercase;
       letter-spacing: 1px;
       border-bottom: 2px solid var(--patriots-white);
-      padding-bottom: 1rem;
+      padding-bottom: clamp(0.5rem, 1%, 1rem);
       flex-shrink: 0;
     }
 
     .menu-card-date {
-      font-size: 1.2rem;
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
       color: rgba(255, 255, 255, 0.8);
-      margin-bottom: 1rem;
+      margin-bottom: clamp(0.5rem, 1%, 1rem);
       font-weight: 500;
       flex-shrink: 0;
     }
@@ -107,15 +109,16 @@
     .menu-items {
       display: flex;
       flex-direction: column;
-      gap: 0.8rem;
+      gap: clamp(0.5rem, 1%, 0.8rem);
       flex: 1;
+      min-height: 0;
     }
 
     .menu-item {
-      font-size: 1.3rem;
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
       color: var(--patriots-white);
       line-height: 1.5;
-      padding: 0.5rem 0;
+      padding: clamp(0.3rem, 0.5%, 0.5rem) 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
 
@@ -124,7 +127,7 @@
     }
 
     .no-menu {
-      font-size: 1.2rem;
+      font-size: clamp(0.95rem, 2vw, 1.2rem);
       color: rgba(255, 255, 255, 0.7);
       font-style: italic;
     }
@@ -133,8 +136,8 @@
       background-color: rgba(198, 12, 48, 0.8);
       border: 3px solid var(--patriots-white);
       border-radius: 12px;
-      padding: 2rem;
-      font-size: 1.5rem;
+      padding: clamp(1rem, 2%, 2rem);
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
       color: var(--patriots-white);
       text-align: center;
       display: flex;
@@ -146,8 +149,8 @@
       background-color: rgba(198, 12, 48, 0.8);
       border: 3px solid var(--patriots-white);
       border-radius: 12px;
-      padding: 2rem;
-      font-size: 1.5rem;
+      padding: clamp(1rem, 2%, 2rem);
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
       color: var(--patriots-white);
       text-align: center;
       display: flex;
@@ -156,11 +159,11 @@
     }
 
     footer {
-      margin-top: 2rem;
-      padding-top: 1rem;
+      margin-top: clamp(1rem, 2%, 2rem);
+      padding-top: clamp(0.5rem, 1%, 1rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: 0.9rem;
+      font-size: clamp(0.75rem, 1.5vw, 0.9rem);
       opacity: 0.7;
       text-align: right;
       flex-shrink: 0;
