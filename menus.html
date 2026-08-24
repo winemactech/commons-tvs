@@ -187,7 +187,6 @@
 
   <script>
     const calendarUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
-
     const CACHE_KEY = 'wem_menus_cache';
 
     function getFormattedDate(date) {
@@ -253,7 +252,7 @@
     }
 
     async function tryFetchRawICS() {
-      // 1. Try corsproxy.io raw
+      // Endpoint 1: corsproxy.io
       try {
         const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(calendarUrl)}`);
         if (res.ok) {
@@ -262,7 +261,7 @@
         }
       } catch(e) {}
 
-      // 2. Try allorigins.win raw
+      // Endpoint 2: allorigins raw
       try {
         const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`);
         if (res.ok) {
@@ -271,7 +270,7 @@
         }
       } catch(e) {}
 
-      // 3. Fallback: allorigins.win JSON API wrapper (bypasses raw CORS restrictions)
+      // Endpoint 3: allorigins JSON API
       try {
         const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}`);
         if (res.ok) {
@@ -282,32 +281,42 @@
         }
       } catch(e) {}
 
+      // Endpoint 4: cors-anywhere proxy fallback
+      try {
+        const res = await fetchWithTimeout(`https://cors-anywhere.herokuapp.com/${calendarUrl}`);
+        if (res.ok) {
+          const txt = await res.text();
+          if (txt.includes('BEGIN:VCALENDAR')) return txt;
+        }
+      } catch(e) {}
+
       return null;
     }
 
     async function fetchMenuCalendar() {
-      // Step 1: Always render default structure or cached data immediately
+      // 1. Render immediately from local storage if available
       const cached = localStorage.getItem(CACHE_KEY);
-      let hasData = false;
+      let loadedFromCache = false;
 
       if (cached) {
         try {
           const { icsData, time } = JSON.parse(cached);
           parseAndRenderCalendarMenu(icsData);
           updateLastUpdatedTime(time);
-          hasData = true;
+          loadedFromCache = true;
         } catch (e) {
           console.error("Cache read error:", e);
         }
       }
 
-      // If no cache, render empty 3-card menu layout immediately (no gross full-screen error)
-      if (!hasData) {
+      // If no cache, draw the 3 menu cards immediately (never display a full screen error)
+      if (!loadedFromCache) {
         parseAndRenderCalendarMenu("");
       }
 
-      // Step 2: Fetch fresh data in background
+      // 2. Fetch fresh calendar data in background
       const freshICS = await tryFetchRawICS();
+
       if (freshICS) {
         const cachePayload = { icsData: freshICS, time: Date.now() };
         localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
@@ -371,7 +380,7 @@
       const nextSchoolDay = getNextSchoolDay(today);
       const nextDayName = (today.getDay() === 5 || today.getDay() === 6) ? "Monday's" : "Tomorrow's";
 
-      // ALWAYS render the three cards
+      // Guarantees the 3 menu columns always render
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
