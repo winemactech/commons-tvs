@@ -168,7 +168,7 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Workshop Google Calendar iCal Feed URL (public)
+    // Google Calendar iCal URL
     const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
     
     // Try direct fetch first, then multiple CORS proxies
@@ -258,31 +258,29 @@
     async function fetchEventsWithRetry() {
       for (let i = 0; i < proxyUrls.length; i++) {
         try {
-          console.log(`Attempting proxy ${i + 1}/${proxyUrls.length}...`);
+          console.log(`Fetching workshops from proxy ${i}...`);
           const response = await fetch(proxyUrls[i], { 
-            method: 'GET',
-            mode: 'cors'
+            method: 'GET'
           });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.text();
-          console.log("Successfully fetched calendar data");
           parseAndRenderICS(data);
           updateLastUpdatedTime();
           return;
         } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error.message);
+          console.error(`Proxy ${i} failed:`, error);
           if (i === proxyUrls.length - 1) {
-            displayError(`Unable to load workshops. Please verify the calendar is set to Public in Google Calendar settings.`);
+            displayError(`Unable to load workshops from Google Calendar. Please try refreshing the page.`);
           }
         }
       }
     }
 
     function displayError(message) {
-      const container = document.getElementById('events-scroll-container');
-      container.innerHTML = `<div class="error-message">${message}</div>`;
+      const container = document.getElementById('events-container');
+      container.innerHTML = `<div class="events-scroll-container"><div class="error-message">${message}</div></div>`;
     }
 
     function parseAndRenderICS(icsData) {
@@ -293,9 +291,9 @@
       const blocks = icsData.split('BEGIN:VEVENT');
 
       blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/SUMMARY:(.*)/);
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
-        const locationMatch = block.match(/LOCATION:(.*)/);
+        const summaryMatch = block.match(/SUMMARY:(.*)/)
+        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/)
+        const locationMatch = block.match(/LOCATION:(.*)/)
 
         if (summaryMatch && dtstartMatch) {
           const title = summaryMatch[1].trim();
@@ -313,16 +311,12 @@
         }
       });
 
-      console.log(`Found ${events.length} workshops`);
-
       // Sort events by date and filter out past events
       const now = new Date();
       const upcomingEvents = events
         .filter(evt => evt.dateObj && evt.dateObj > now)
         .sort((a, b) => a.timestamp - b.timestamp)
         .slice(0, 10);
-
-      console.log(`Found ${upcomingEvents.length} upcoming workshops`);
 
       if (upcomingEvents.length === 0) {
         container.innerHTML = '<div class="error-message">No upcoming workshops scheduled.</div>';
