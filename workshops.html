@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Win-E-Mac Workshop Schedule</title>
+  <title>Win-E-Mac Patriot Workshops</title>
   <style>
     :root {
       --patriots-navy: #002244;
@@ -167,7 +167,7 @@
 
   <header>
     <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
-    <h1>Workshop Schedule</h1>
+    <h1>Patriot Workshops</h1>
   </header>
 
   <div class="events-wrapper">
@@ -179,41 +179,12 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
+    // Direct static URL hosted via GitHub repository
+    const workshopsCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/workshops.csv";
     const CACHE_KEY = 'wem_workshops_cache';
+
     let scrollInterval = null;
     let scrollDelay = null;
-
-    // Parses standard iCal date formats: YYYYMMDD or YYYYMMDDTHHMMSS(Z)
-    function parseICalDate(dateStr) {
-      if (!dateStr) return null;
-      
-      // Clean string of any remaining whitespace
-      const cleanStr = dateStr.trim();
-      
-      // Matches YYYYMMDD or YYYYMMDDTHHMMSS with optional Z suffix
-      const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/);
-      if (!match) return null;
-
-      const [, year, month, day, hour = "00", minute = "00", second = "00", isUtc] = match;
-
-      if (isUtc) {
-        return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second)));
-      } else {
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
-      }
-    }
-
-    function formatDateForDisplay(dateObj) {
-      if (!dateObj || isNaN(dateObj.getTime())) return "TBD";
-      return dateObj.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit'
-      });
-    }
 
     function updateLastUpdatedTime(timestamp) {
       const displayDate = timestamp ? new Date(timestamp) : new Date();
@@ -224,6 +195,7 @@
 
     function startAutoScroll() {
       const container = document.getElementById('scroll-container');
+      
       if (scrollInterval) clearInterval(scrollInterval);
       if (scrollDelay) clearTimeout(scrollDelay);
 
@@ -233,6 +205,7 @@
         scrollDelay = setTimeout(() => {
           scrollInterval = setInterval(() => {
             container.scrollTop += 1;
+
             if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
               clearInterval(scrollInterval);
               setTimeout(() => {
@@ -243,115 +216,98 @@
           }, 40);
         }, 2000);
       }
+
       initScroll();
     }
 
-    async function fetchCalendarICS() {
-      const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`
-      ];
+    function parseCSV(text) {
+      const lines = [];
+      let entry = '';
+      let inQuotes = false;
 
-      for (const proxyUrl of proxies) {
-        try {
-          const res = await fetch(proxyUrl);
-          if (res.ok) {
-            const text = await res.text();
-            if (text && text.includes('BEGIN:VCALENDAR')) {
-              return text;
-            }
-          }
-        } catch (e) {
-          console.warn("Proxy attempt failed:", proxyUrl, e);
-        }
-      }
-      return null;
-    }
-
-    async function fetchEventsWithRetry() {
-      const freshICS = await fetchCalendarICS();
-
-      if (freshICS) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ icsData: freshICS, time: Date.now() }));
-        parseAndRenderICS(freshICS);
-        updateLastUpdatedTime(Date.now());
-      } else {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          try {
-            const { icsData, time } = JSON.parse(cached);
-            parseAndRenderICS(icsData);
-            updateLastUpdatedTime(time);
-          } catch (e) {
-            console.error("Cache read error:", e);
-          }
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === '"') {
+          inQuotes = !inQuotes;
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (entry.trim()) lines.push(entry.trim());
+          entry = '';
         } else {
-          document.getElementById('scroll-container').innerHTML = 
-            '<div class="loading-message">Unable to load Google Calendar feed.</div>';
+          entry += c;
+        }
+      }
+      if (entry.trim()) lines.push(entry.trim());
+      
+      if (lines.length < 2) return [];
+      
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+      return lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = values[i] || '');
+        return obj;
+      });
+    }
+
+    async function fetchWorkshops() {
+      // 1. Render immediately from local cache if present
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { csv, time } = JSON.parse(cached);
+          renderWorkshops(parseCSV(csv));
+          updateLastUpdatedTime(time);
+        } catch (e) {
+          console.error("Cache read error:", e);
+        }
+      }
+
+      // 2. Fetch fresh static CSV file
+      try {
+        const response = await fetch(workshopsCsvUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const csvText = await response.text();
+        
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csvText, time: Date.now() }));
+        renderWorkshops(parseCSV(csvText));
+        updateLastUpdatedTime(Date.now());
+      } catch (error) {
+        console.warn("Workshop fetch error:", error);
+        if (!cached) {
+          displayError("Unable to load workshops schedule.");
         }
       }
     }
 
-    function parseAndUnfoldICS(icsData) {
-      return icsData.replace(/\r?\n[ \t]/g, '');
+    function displayError(message) {
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function parseAndRenderICS(icsData) {
+    function renderWorkshops(rows) {
       const container = document.getElementById('scroll-container');
       container.innerHTML = '';
 
-      if (!icsData) {
+      if (!rows || rows.length === 0) {
         container.innerHTML = '<div class="loading-message">No upcoming workshops scheduled.</div>';
         return;
       }
 
-      const unfoldedData = parseAndUnfoldICS(icsData);
-      const events = [];
-      const blocks = unfoldedData.split('BEGIN:VEVENT');
+      rows.forEach(row => {
+        const title = row['Workshop'] || row['Title'] || row['Name'] || '';
+        const datetime = row['Date/Time'] || row['Date'] || row['Time'] || '';
+        const location = row['Location'] || row['Room'] || '';
 
-      const now = new Date();
-      // Show events starting from 3 days ago through the future
-      const pastCutoff = now.getTime() - (3 * 24 * 60 * 60 * 1000);
+        if (!title.trim()) return;
 
-      blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
-        // Extracts EVERYTHING after the final colon on the DTSTART line
-        const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:([^\r\n]+)/m);
-        const locationMatch = block.match(/^LOCATION:(.*)$/m);
-
-        if (summaryMatch && dtstartMatch) {
-          let title = summaryMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\/g, '');
-          
-          // Split on ':' to guarantee we take only the raw date string after any parameters/TZID
-          const rawDtstart = dtstartMatch[1].trim();
-          const rawDateStr = rawDtstart.includes(':') ? rawDtstart.split(':').pop() : rawDtstart;
-          
-          let location = locationMatch ? locationMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\/g, '') : '';
-          
-          const baseDateObj = parseICalDate(rawDateStr);
-
-          if (baseDateObj && !isNaN(baseDateObj.getTime())) {
-            if (baseDateObj.getTime() >= pastCutoff) {
-              events.push({ title, location, dateObj: baseDateObj, timestamp: baseDateObj.getTime() });
-            }
-          }
-        }
-      });
-
-      const upcomingEvents = events.sort((a, b) => a.timestamp - b.timestamp).slice(0, 30);
-
-      if (upcomingEvents.length === 0) {
-        container.innerHTML = '<div class="loading-message">No upcoming workshops scheduled.</div>';
-        return;
-      }
-
-      upcomingEvents.forEach(evt => {
         const card = document.createElement('div');
         card.className = 'event-card';
+        
         card.innerHTML = `
-          <div class="event-title">${escapeHtml(evt.title)}</div>
-          <div class="event-datetime">${formatDateForDisplay(evt.dateObj)}</div>
-          <div class="event-location">${evt.location ? escapeHtml(evt.location) : 'TBD'}</div>
+          <div class="event-title">${escapeHtml(title)}</div>
+          <div class="event-datetime">${escapeHtml(datetime)}</div>
+          <div class="event-location">${location ? escapeHtml(location) : 'TBD'}</div>
         `;
         container.appendChild(card);
       });
@@ -365,8 +321,7 @@
       return div.innerHTML;
     }
 
-    fetchEventsWithRetry();
-    setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
+    fetchWorkshops();
   </script>
 </body>
 </html>
