@@ -121,7 +121,7 @@
     }
 
     .menu-item {
-      font-size: clamp(1rem, 2vw, 1.3rem);
+      font-size: clamp(1.05rem, 2.2vw, 1.35rem);
       color: var(--patriots-white);
       line-height: 1.4;
       padding: clamp(0.3rem, 0.5%, 0.5rem) 0;
@@ -138,7 +138,7 @@
       font-style: italic;
     }
 
-    .stale-notice {
+    .loading-notice, .error-notice {
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 8px solid var(--patriots-red);
       border-radius: 12px;
@@ -153,13 +153,6 @@
       justify-content: center;
       height: 100%;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-
-    .stale-notice .subtext {
-      font-size: clamp(1rem, 2vw, 1.4rem);
-      color: var(--patriots-silver);
-      font-weight: 400;
-      margin-top: 1rem;
     }
 
     footer {
@@ -182,23 +175,37 @@
   </header>
 
   <div class="menu-wrapper" id="menu-container">
-    <div class="stale-notice">Loading menu...</div>
+    <div class="loading-notice">Loading menu calendar...</div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const sheetId = "1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0";
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=menus`;
+    const menuCalendarIcalUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
 
-    function getTodayFormatted() {
-      return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    const proxyUrls = [
+      menuCalendarIcalUrl,
+      `https://corsproxy.io/?${encodeURIComponent(menuCalendarIcalUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(menuCalendarIcalUrl)}`
+    ];
+
+    function getFormattedDate(date) {
+      return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     }
 
-    function getTomorrowFormatted() {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    function getNextSchoolDay(startDate) {
+      const nextDay = new Date(startDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      // If next day is Saturday (6), jump to Monday (+2)
+      if (nextDay.getDay() === 6) {
+        nextDay.setDate(nextDay.getDate() + 2);
+      } 
+      // If next day is Sunday (0), jump to Monday (+1)
+      else if (nextDay.getDay() === 0) {
+        nextDay.setDate(nextDay.getDate() + 1);
+      }
+      return nextDay;
     }
 
     function updateLastUpdatedTime() {
@@ -208,121 +215,116 @@
       });
     }
 
-    // Checks if text contains today's numeric date (e.g., "August 24" or "8/24" or "24th")
-    function isBulletinFromToday(text) {
-      const today = new Date();
-      const monthName = today.toLocaleDateString('en-US', { month: 'long' }).toLowerCase();
-      const monthShort = today.toLocaleDateString('en-US', { month: 'short' }).toLowerCase();
-      const dayNum = today.getDate();
-      const monthNum = today.getMonth() + 1;
-
-      const textLower = text.toLowerCase();
-
-      // Check for patterns like "August 24", "Aug 24", "8/24"
-      const datePattern1 = new RegExp(`${monthName}\\s+0?${dayNum}\\b`);
-      const datePattern2 = new RegExp(`${monthShort}\\s+0?${dayNum}\\b`);
-      const datePattern3 = new RegExp(`\\b0?${monthNum}\/0?${dayNum}\\b`);
-
-      return datePattern1.test(textLower) || datePattern2.test(textLower) || datePattern3.test(textLower);
-    }
-
-    function parseMenuText(text) {
-      if (!text) return [];
-      const meals = [];
-      const mealRegex = /(Breakfast|Lunch|Dinner)\s+(?:on\s+)?(\w+)?\s+(?:will be|is)\s+(.+?)(?=(?:Breakfast|Lunch|Dinner)|$)/gi;
+    function parseICalDate(dateStr) {
+      if (!dateStr) return null;
+      dateStr = dateStr.trim();
       
-      let match;
-      while ((match = mealRegex.exec(text)) !== null) {
-        const mealType = match[1].trim();
-        const dayRef = match[2] ? match[2].trim().toLowerCase() : 'today';
-        let menuItems = match[3].trim();
-        
-        if (menuItems.endsWith('.')) menuItems = menuItems.slice(0, -1).trim();
-        
-        const items = menuItems
-          .split(/\s+and\s+|\s*,\s*/)
-          .map(item => item.trim())
-          .filter(item => item.length > 0);
-        
-        meals.push({ mealType, dayRef, items });
-      }
-      return meals;
+      const match = dateStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z?)?/);
+      if (!match) return null;
+
+      const [, year, month, day, hour = "00", minute = "00", second = "00"] = match;
+      return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
     }
 
-    function displayStaleNotice() {
-      const container = document.getElementById('menu-container');
-      container.innerHTML = `
-        <div class="stale-notice">
-          The Daily Bulletin hasn't come out yet today.
-          <div class="subtext">This screen will automatically update as soon as today's menu is posted.</div>
-        </div>
-      `;
+    function parseAndUnfoldICS(icsData) {
+      return icsData.replace(/\r?\n[ \t]/g, '');
     }
 
-    async function fetchMenus() {
-      try {
-        const response = await fetch(sheetUrl);
-        const csv = await response.text();
-        
-        const lines = csv.trim().split('\n');
-        if (lines.length === 0) {
-          displayStaleNotice();
-          return;
-        }
-
-        const fullRawText = lines.join(' ').replace(/"/g, '');
-
-        // If today's date isn't found anywhere in the bulletin row, treat it as unupdated
-        if (!isBulletinFromToday(fullRawText)) {
-          displayStaleNotice();
+    async function fetchMenuCalendar() {
+      for (let i = 0; i < proxyUrls.length; i++) {
+        try {
+          const response = await fetch(proxyUrls[i]);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const data = await response.text();
+          parseAndRenderCalendarMenu(data);
           updateLastUpdatedTime();
           return;
+        } catch (error) {
+          console.error(`Proxy ${i + 1} failed:`, error);
+          if (i === proxyUrls.length - 1) {
+            displayError("Unable to load menu calendar.");
+          }
         }
-
-        let menuText = lines[0];
-        if (lines.length > 1 && (lines[0].toLowerCase().includes('menu') || lines[0].toLowerCase().includes('date'))) {
-          menuText = lines[1];
-        }
-        
-        parseAndRenderMenus(menuText.replace(/"/g, ''));
-        updateLastUpdatedTime();
-      } catch (error) {
-        console.error("Error fetching menus:", error);
-        displayStaleNotice();
       }
     }
 
-    function parseAndRenderMenus(menuText) {
+    function displayError(message) {
       const container = document.getElementById('menu-container');
-      const meals = parseMenuText(menuText);
+      container.innerHTML = `<div class="error-notice">${message}</div>`;
+    }
 
-      const todayLunch = meals.find(m => m.mealType.toLowerCase() === 'lunch' && m.dayRef === 'today');
-      const tomorrowBreakfast = meals.find(m => m.mealType.toLowerCase() === 'breakfast' && (m.dayRef === 'tomorrow' || m.dayRef !== 'today'));
-      const tomorrowLunch = meals.find(m => m.mealType.toLowerCase() === 'lunch' && m.dayRef === 'tomorrow');
+    function isSameDate(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth() &&
+             d1.getDate() === d2.getDate();
+    }
+
+    function parseAndRenderCalendarMenu(icsData) {
+      const container = document.getElementById('menu-container');
+      const unfoldedData = parseAndUnfoldICS(icsData);
+      const blocks = unfoldedData.split('BEGIN:VEVENT');
+
+      const today = new Date();
+      const nextSchoolDay = getNextSchoolDay(today);
+
+      // Label dynamically: "Tomorrow's" on Mon-Thu, "Monday's" on Fri-Sat
+      const nextDayName = (today.getDay() === 5 || today.getDay() === 6) ? "Monday's" : "Tomorrow's";
+
+      let todayLunchItems = [];
+      let nextDayBreakfastItems = [];
+      let nextDayLunchItems = [];
+
+      blocks.slice(1).forEach(block => {
+        const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
+        const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
+        const descriptionMatch = block.match(/^DESCRIPTION:(.*)$/m);
+
+        if (summaryMatch && dtstartMatch) {
+          let summary = summaryMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';');
+          let description = descriptionMatch ? descriptionMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';') : '';
+          const eventDate = parseICalDate(dtstartMatch[1].trim());
+
+          if (!eventDate) return;
+
+          const fullText = (summary + " " + description).toLowerCase();
+
+          if (isSameDate(eventDate, today)) {
+            if (fullText.includes('lunch') || (!fullText.includes('breakfast') && !fullText.includes('dinner'))) {
+              todayLunchItems.push(summary);
+            }
+          } else if (isSameDate(eventDate, nextSchoolDay)) {
+            if (fullText.includes('breakfast')) {
+              nextDayBreakfastItems.push(summary);
+            } else if (fullText.includes('lunch') || (!fullText.includes('breakfast') && !fullText.includes('dinner'))) {
+              nextDayLunchItems.push(summary);
+            }
+          }
+        }
+      });
 
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
             <div class="menu-card-header">Today's Lunch</div>
-            <div class="menu-card-date">${getTodayFormatted()}</div>
+            <div class="menu-card-date">${getFormattedDate(today)}</div>
             <div class="menu-items">
-              ${todayLunch ? renderMenuItems(todayLunch.items) : '<div class="no-menu">No menu listed</div>'}
+              ${renderMenuItems(todayLunchItems)}
             </div>
           </div>
           
           <div class="menu-card breakfast">
-            <div class="menu-card-header">Tomorrow's Breakfast</div>
-            <div class="menu-card-date">${getTomorrowFormatted()}</div>
+            <div class="menu-card-header">${nextDayName} Breakfast</div>
+            <div class="menu-card-date">${getFormattedDate(nextSchoolDay)}</div>
             <div class="menu-items">
-              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.items) : '<div class="no-menu">No menu listed</div>'}
+              ${renderMenuItems(nextDayBreakfastItems)}
             </div>
           </div>
           
           <div class="menu-card">
-            <div class="menu-card-header">Tomorrow's Lunch</div>
-            <div class="menu-card-date">${getTomorrowFormatted()}</div>
+            <div class="menu-card-header">${nextDayName} Lunch</div>
+            <div class="menu-card-date">${getFormattedDate(nextSchoolDay)}</div>
             <div class="menu-items">
-              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.items) : '<div class="no-menu">No menu listed</div>'}
+              ${renderMenuItems(nextDayLunchItems)}
             </div>
           </div>
         </div>
@@ -330,7 +332,7 @@
     }
 
     function renderMenuItems(items) {
-      if (!items || items.length === 0) return '<div class="no-menu">No menu listed</div>';
+      if (!items || items.length === 0) return '<div class="no-menu">No menu scheduled</div>';
       return items.map(item => `<div class="menu-item">${escapeHtml(item)}</div>`).join('');
     }
 
@@ -340,8 +342,8 @@
       return div.innerHTML;
     }
 
-    fetchMenus();
-    setInterval(fetchMenus, 15 * 60 * 1000);
+    fetchMenuCalendar();
+    setInterval(fetchMenuCalendar, 15 * 60 * 1000);
   </script>
 </body>
 </html>
