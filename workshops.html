@@ -180,8 +180,6 @@
 
   <script>
     const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
-    const workshopCalendarJsonUrl = "https://calendar.google.com/calendar/feeds/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic?alt=json";
-
     const CACHE_KEY = 'wem_workshops_cache';
     let scrollInterval = null;
     let scrollDelay = null;
@@ -244,54 +242,54 @@
       initScroll();
     }
 
-    async function fetchWithTimeout(url, timeoutMs = 4000) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        return response;
-      } catch (err) {
-        clearTimeout(id);
-        throw err;
-      }
-    }
+    // JSONP loader to completely bypass CORS / iframe fetch blocks in player.ablesign.tv
+    function fetchICSViaJSONP() {
+      return new Promise((resolve) => {
+        const callbackName = 'handleCalendarResponse_' + Math.floor(Math.random() * 1000000);
+        const script = document.createElement('script');
+        let resolved = false;
 
-    async function tryFetchRawICS() {
-      // Proxy 1: corsproxy.io
-      try {
-        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`);
-        if (res.ok) {
-          const txt = await res.text();
-          if (txt.includes('BEGIN:VCALENDAR')) return txt;
-        }
-      } catch(e) {}
-
-      // Proxy 2: Allorigins raw
-      try {
-        const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`);
-        if (res.ok) {
-          const txt = await res.text();
-          if (txt.includes('BEGIN:VCALENDAR')) return txt;
-        }
-      } catch(e) {}
-
-      // Proxy 3: Allorigins JSON wrapper
-      try {
-        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(workshopCalendarIcalUrl)}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.contents && json.contents.includes('BEGIN:VCALENDAR')) {
-            return json.contents;
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(null);
           }
-        }
-      } catch(e) {}
+        }, 5000);
 
-      return null;
+        function cleanup() {
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeout);
+        }
+
+        window[callbackName] = function(data) {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            if (data && data.contents && data.contents.includes('BEGIN:VCALENDAR')) {
+              resolve(data.contents);
+            } else {
+              resolve(null);
+            }
+          }
+        };
+
+        script.src = `https://api.allorigins.win/get?url=${encodeURIComponent(workshopCalendarIcalUrl)}&callback=${callbackName}`;
+        script.onerror = function() {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(null);
+          }
+        };
+
+        document.body.appendChild(script);
+      });
     }
 
     async function fetchEventsWithRetry() {
-      // 1. Render cached data immediately if available
+      // 1. Immediately render cached data if present
       const cached = localStorage.getItem(CACHE_KEY);
       let loadedFromCache = false;
 
@@ -308,8 +306,8 @@
         }
       }
 
-      // 2. Fetch fresh workshop data from net
-      const freshICS = await tryFetchRawICS();
+      // 2. Fetch fresh calendar text using JSONP script tag
+      const freshICS = await fetchICSViaJSONP();
 
       if (freshICS) {
         const cachePayload = { icsData: freshICS, time: Date.now() };
@@ -318,7 +316,6 @@
         parseAndRenderICS(freshICS);
         updateLastUpdatedTime(cachePayload.time);
       } else if (!loadedFromCache) {
-        // Render fallback empty view without throwing full screen errors
         parseAndRenderICS("");
       }
     }
@@ -358,7 +355,7 @@
         }
       });
 
-      // Filter events from 3 days ago through the future to tolerate clock drift on players
+      // Include events starting from 3 days ago through the future
       const now = new Date();
       const threeDaysAgo = now.getTime() - (72 * 60 * 60 * 1000);
 
