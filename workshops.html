@@ -184,15 +184,23 @@
     let scrollInterval = null;
     let scrollDelay = null;
 
+    // Robust iCal Date Parser (handles DTSTART;TZID=..., ALL-DAY dates, UTC, and local times)
     function parseICalDate(dateStr) {
       if (!dateStr) return null;
-      dateStr = dateStr.trim();
+      const cleanStr = dateStr.trim();
       
-      const match = dateStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z?)?/);
+      // Match YYYYMMDD or YYYYMMDDTHHMMSS
+      const match = cleanStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/);
       if (!match) return null;
 
-      const [, year, month, day, hour = "00", minute = "00", second = "00"] = match;
-      return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+      const [, year, month, day, hour = "00", minute = "00", second = "00", isUtc] = match;
+
+      if (isUtc) {
+        return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second)));
+      } else {
+        // Parse local time assuming target display timezone context
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
+      }
     }
 
     function formatDateForDisplay(dateObj) {
@@ -203,8 +211,7 @@
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
-        minute: '2-digit',
-        timeZone: 'America/Chicago'
+        minute: '2-digit'
       });
     }
 
@@ -242,7 +249,7 @@
       initScroll();
     }
 
-    // JSONP loader to completely bypass CORS / iframe fetch blocks in player.ablesign.tv
+    // Direct JSONP loader to bypass CORS / iframe fetch restrictions inside player.ablesign.tv
     function fetchICSViaJSONP() {
       return new Promise((resolve) => {
         const callbackName = 'handleCalendarResponse_' + Math.floor(Math.random() * 1000000);
@@ -255,7 +262,7 @@
             cleanup();
             resolve(null);
           }
-        }, 5000);
+        }, 6000);
 
         function cleanup() {
           delete window[callbackName];
@@ -289,7 +296,7 @@
     }
 
     async function fetchEventsWithRetry() {
-      // 1. Immediately render cached data if present
+      // 1. Immediately render cached data if available
       const cached = localStorage.getItem(CACHE_KEY);
       let loadedFromCache = false;
 
@@ -306,7 +313,7 @@
         }
       }
 
-      // 2. Fetch fresh calendar text using JSONP script tag
+      // 2. Fetch fresh Google Calendar iCal feed
       const freshICS = await fetchICSViaJSONP();
 
       if (freshICS) {
@@ -337,30 +344,49 @@
       const events = [];
       const blocks = unfoldedData.split('BEGIN:VEVENT');
 
+      const now = new Date();
+      // Show workshops starting from 7 days ago through the future
+      const pastCutoff = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+
       blocks.slice(1).forEach(block => {
         const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
-        const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
+        // Extracts raw date string regardless of DTSTART parameter formatting (e.g. DTSTART;TZID=...:20260825T140000)
+        const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:([^\r\n]+)/m);
         const locationMatch = block.match(/^LOCATION:(.*)$/m);
+        const rruleMatch = block.match(/^RRULE:(.*)$/m);
 
         if (summaryMatch && dtstartMatch) {
-          let title = summaryMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';');
-          const rawDate = dtstartMatch[1].trim();
-          let location = locationMatch ? locationMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';') : '';
+          let title = summaryMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\/g, '');
+          const rawDateStr = dtstartMatch[1].trim();
+          let location = locationMatch ? locationMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\/g, '') : '';
           
-          const dateObj = parseICalDate(rawDate);
+          const baseDateObj = parseICalDate(rawDateStr);
           
-          if (dateObj) {
-            events.push({ title, location, dateObj, timestamp: dateObj.getTime() });
+          if (baseDateObj && !isNaN(baseDateObj.getTime())) {
+            // Push primary event
+            if (baseDateObj.getTime() >= pastCutoff) {
+              events.push({ title, location, dateObj: baseDateObj, timestamp: baseDateObj.getTime() });
+            }
+
+            // Handle weekly recurring rules (RRULE:FREQ=WEEKLY)
+            if (rruleMatch) {
+              const rrule = rruleMatch[1];
+              if (rrule.includes('FREQ=WEEKLY')) {
+                // Generate next 8 weekly occurrences
+                for (let i = 1; i <= 8; i++) {
+                  const recurrentDate = new Date(baseDateObj.getTime() + (i * 7 * 24 * 60 * 60 * 1000));
+                  if (recurrentDate.getTime() >= pastCutoff) {
+                    events.push({ title, location, dateObj: recurrentDate, timestamp: recurrentDate.getTime() });
+                  }
+                }
+              }
+            }
           }
         }
       });
 
-      // Include events starting from 3 days ago through the future
-      const now = new Date();
-      const threeDaysAgo = now.getTime() - (72 * 60 * 60 * 1000);
-
+      // Sort chronological and take the top 30
       const upcomingEvents = events
-        .filter(evt => evt.timestamp >= threeDaysAgo)
         .sort((a, b) => a.timestamp - b.timestamp)
         .slice(0, 30);
 
