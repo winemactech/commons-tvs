@@ -184,10 +184,11 @@
     const calendarUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
 
     const fetchEndpoints = [
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`,
       `https://corsproxy.io/?${encodeURIComponent(calendarUrl)}`,
-      `https://proxy.cors.sh/${calendarUrl}`
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`
     ];
+
+    const CACHE_KEY = 'wem_menus_cache';
 
     function getFormattedDate(date) {
       return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -203,9 +204,9 @@
       return nextDay;
     }
 
-    function updateLastUpdatedTime() {
-      const now = new Date();
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
+    function updateLastUpdatedTime(timestamp) {
+      const displayDate = timestamp ? new Date(timestamp) : new Date();
+      document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
         hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
       });
     }
@@ -221,13 +222,11 @@
     }
 
     function unfoldICS(icsData) {
-      // Unfold folded lines in standard iCal format
       return icsData.replace(/\r?\n[ \t]/g, '');
     }
 
     function extractDescriptionItems(rawDesc) {
       if (!rawDesc) return [];
-      // Clean up escaped line breaks and characters from Google Calendar iCal output
       const cleaned = rawDesc
         .replace(/\\n/gi, '\n')
         .replace(/\\,/g, ',')
@@ -240,22 +239,60 @@
         .filter(line => line.length > 0 && !line.toLowerCase().startsWith('http'));
     }
 
+    // Enforce 3.5s timeout on proxy requests to keep transitions sub-second
+    async function fetchWithTimeout(url, timeoutMs = 3500) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    }
+
     async function fetchMenuCalendar() {
+      // 1. Immediately display cached menu if present
+      const cached = localStorage.getItem(CACHE_KEY);
+      let loadedFromCache = false;
+
+      if (cached) {
+        try {
+          const { icsData, time } = JSON.parse(cached);
+          parseAndRenderCalendarMenu(icsData);
+          updateLastUpdatedTime(time);
+          loadedFromCache = true;
+        } catch (e) {
+          console.error("Cache read error:", e);
+        }
+      }
+
+      // 2. Fetch fresh menu data in background
       for (let url of fetchEndpoints) {
         try {
-          const response = await fetch(url);
+          const response = await fetchWithTimeout(url, 3500);
           if (!response.ok) throw new Error(`HTTP Status ${response.status}`);
+          
           const rawText = await response.text();
           if (rawText.includes('BEGIN:VCALENDAR')) {
+            const cachePayload = { icsData: rawText, time: Date.now() };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
+
             parseAndRenderCalendarMenu(rawText);
-            updateLastUpdatedTime();
+            updateLastUpdatedTime(cachePayload.time);
             return;
           }
         } catch (e) {
-          console.warn("Proxy attempt failed, trying next option...", e);
+          console.warn("Proxy attempt failed or timed out:", e);
         }
       }
-      displayError("Unable to fetch menu data from Google Calendar feed.");
+
+      // 3. If network call failed and no local cache existed, render error notice
+      if (!loadedFromCache) {
+        displayError("Unable to fetch menu data from Google Calendar feed.");
+      }
     }
 
     function displayError(message) {
@@ -294,7 +331,6 @@
           const summary = summaryMatch ? summaryMatch[1].trim() : '';
           const description = descriptionMatch ? descriptionMatch[1].trim() : '';
 
-          // Primary menu source: DESCRIPTION lines. Fallback: SUMMARY
           const menuList = description ? extractDescriptionItems(description) : [summary];
           const fullContext = (summary + " " + description).toLowerCase();
 
