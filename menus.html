@@ -102,10 +102,11 @@
       border-bottom: 2px solid rgba(255, 255, 255, 0.3);
       margin-bottom: 1.25rem;
       text-align: center;
+      flex-shrink: 0;
     }
 
     .card-title {
-      font-size: clamp(1.2rem, 1.8vw, 1.65rem);
+      font-size: clamp(1.4rem, 2vw, 1.85rem);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -113,7 +114,7 @@
     }
 
     .card-date {
-      font-size: clamp(0.95rem, 1.3vw, 1.2rem);
+      font-size: clamp(1rem, 1.4vw, 1.35rem);
       font-weight: 600;
       opacity: 0.85;
       margin-top: 0.3rem;
@@ -124,23 +125,30 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.85rem;
       overflow-y: auto;
-      font-size: clamp(1.1rem, 1.8vw, 1.45rem);
-      font-weight: 600;
-      line-height: 1.35;
+      font-weight: 700;
+      line-height: 1.3;
+      justify-content: flex-start;
     }
 
     .menu-item-line {
       display: flex;
       align-items: flex-start;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      white-space: nowrap;
     }
 
-    .menu-item-line::before {
-      content: "•";
+    .bullet-symbol {
       font-weight: bold;
-      opacity: 0.8;
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+
+    .item-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .no-data-text {
@@ -149,6 +157,7 @@
       font-weight: 500;
       text-align: center;
       margin-top: 2rem;
+      font-size: 1.25rem;
     }
 
     footer {
@@ -162,7 +171,6 @@
       flex-shrink: 0;
     }
 
-    /* Scrollbar for long description lists */
     .card-body::-webkit-scrollbar {
       width: 4px;
     }
@@ -191,7 +199,7 @@
 
   <script>
     const menuIcsUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/menu.ics";
-    const CACHE_KEY = 'wem_menu_ical_cache_v7';
+    const CACHE_KEY = 'wem_menu_ical_cache_v8';
 
     function updateLastUpdatedTime(timestamp) {
       const displayDate = timestamp ? new Date(timestamp) : new Date();
@@ -263,16 +271,50 @@
       });
     }
 
-    function formatDescriptionLines(descText) {
-      if (!descText || !descText.trim()) return '<div class="no-data-text">No menu items listed</div>';
-
-      const lines = descText.split('\n')
+    function parseDescriptionLines(descText) {
+      if (!descText || !descText.trim()) return [];
+      return descText.split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0);
+    }
 
-      if (lines.length === 0) return '<div class="no-data-text">No menu items listed</div>';
+    // Dynamic sizing logic based on text measurement
+    function adjustMenuFontSize(allLines) {
+      if (!allLines || allLines.length === 0) return;
 
-      return lines.map(line => `<div class="menu-item-line"><span>${escapeHtml(line)}</span></div>`).join('');
+      const bodyElem = document.querySelector('.card-body');
+      if (!bodyElem) return;
+
+      // Calculate width available inside the card container (accounting for card padding & bullet space)
+      const containerWidth = bodyElem.clientWidth - 45; 
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      let minFontSizeNeeded = 48; // Upper bound cap (3rem)
+      const minAllowed = 18;      // Lower bound cap (1.1rem)
+
+      allLines.forEach(line => {
+        // Measure line width at standard 20px font
+        context.font = '700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+        const measuredWidth = context.measureText(line).width;
+
+        if (measuredWidth > 0) {
+          // Calculate font size that fits this specific line into the container width
+          const targetSizeForLine = (containerWidth / measuredWidth) * 20;
+          if (targetSizeForLine < minFontSizeNeeded) {
+            minFontSizeNeeded = targetSizeForLine;
+          }
+        }
+      });
+
+      // Clamp target size within acceptable bounds
+      const finalFontSize = Math.max(minAllowed, Math.min(minFontSizeNeeded, 48));
+
+      // Apply the uniform font size to all menu items across all cards
+      document.querySelectorAll('.menu-item-line').forEach(item => {
+        item.style.fontSize = `${finalFontSize}px`;
+      });
     }
 
     function renderMenuCards(events) {
@@ -308,34 +350,54 @@
           type: 'card-red',
           header: "Today's Lunch",
           dateStr: formatDateSubHeader(today),
-          description: todayLunch ? todayLunch.description : ""
+          lines: parseDescriptionLines(todayLunch ? todayLunch.description : "")
         },
         {
           type: 'card-blue',
           header: `${nextDayLabel} Breakfast`,
           dateStr: formatDateSubHeader(nextDay),
-          description: nextBreakfast ? nextBreakfast.description : ""
+          lines: parseDescriptionLines(nextBreakfast ? nextBreakfast.description : "")
         },
         {
           type: 'card-red',
           header: `${nextDayLabel} Lunch`,
           dateStr: formatDateSubHeader(nextDay),
-          description: nextLunch ? nextLunch.description : ""
+          lines: parseDescriptionLines(nextLunch ? nextLunch.description : "")
         }
       ];
+
+      const allLines = [];
 
       cardsConfig.forEach(card => {
         const cardElem = document.createElement('div');
         cardElem.className = `menu-card ${card.type}`;
+        
+        let bodyHtml = '';
+        if (card.lines.length === 0) {
+          bodyHtml = '<div class="no-data-text">No menu items listed</div>';
+        } else {
+          card.lines.forEach(line => {
+            allLines.push(line);
+            bodyHtml += `
+              <div class="menu-item-line">
+                <span class="bullet-symbol">•</span>
+                <span class="item-text">${escapeHtml(line)}</span>
+              </div>`;
+          });
+        }
+
         cardElem.innerHTML = `
           <div class="card-header">
             <div class="card-title">${escapeHtml(card.header)}</div>
             <div class="card-date">${escapeHtml(card.dateStr)}</div>
           </div>
-          <div class="card-body">${formatDescriptionLines(card.description)}</div>
+          <div class="card-body">${bodyHtml}</div>
         `;
         grid.appendChild(cardElem);
       });
+
+      // Recalculate and apply uniform font size after rendering DOM nodes
+      requestAnimationFrame(() => adjustMenuFontSize(allLines));
     }
 
     async function fetchMenu() {
@@ -371,6 +433,17 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    // Auto-recalculate on window resize
+    window.addEventListener('resize', () => {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { ics } = JSON.parse(cached);
+          renderMenuCards(parseICS(ics));
+        } catch(e) {}
+      }
+    });
 
     fetchMenu();
   </script>
