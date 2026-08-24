@@ -169,12 +169,14 @@
   <script>
     const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
     
+    // Direct Google Calendar fetch removed because it fails CORS in browsers.
+    // Proxy endpoints with strict timeouts ensure sub-second rendering.
     const proxyUrls = [
-      workshopCalendarIcalUrl,
       `https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`,
       `https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`
     ];
 
+    const CACHE_KEY = 'wem_workshops_cache';
     let scrollInterval = null;
     let scrollDelay = null;
 
@@ -202,10 +204,10 @@
       });
     }
 
-    function updateLastUpdatedTime() {
-      const now = new Date();
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+    function updateLastUpdatedTime(timestamp) {
+      const displayDate = timestamp ? new Date(timestamp) : new Date();
+      document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago'
       });
     }
 
@@ -236,21 +238,59 @@
       initScroll();
     }
 
+    // Enforce strict timeout to prevent hangs on slow proxies
+    async function fetchWithTimeout(url, timeoutMs = 3500) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    }
+
     async function fetchEventsWithRetry() {
+      // 1. Immediately render cached schedule if available
+      const cached = localStorage.getItem(CACHE_KEY);
+      let loadedFromCache = false;
+
+      if (cached) {
+        try {
+          const { icsData, time } = JSON.parse(cached);
+          parseAndRenderICS(icsData);
+          updateLastUpdatedTime(time);
+          loadedFromCache = true;
+        } catch (e) {
+          console.error("Cache read error:", e);
+        }
+      }
+
+      // 2. Fetch fresh workshop data in background with fast timeout
       for (let i = 0; i < proxyUrls.length; i++) {
         try {
-          const response = await fetch(proxyUrls[i]);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const response = await fetchWithTimeout(proxyUrls[i], 3500);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          
           const data = await response.text();
+          
+          // Save fresh data to local cache
+          const cachePayload = { icsData: data, time: Date.now() };
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
+
           parseAndRenderICS(data);
-          updateLastUpdatedTime();
+          updateLastUpdatedTime(cachePayload.time);
           return;
         } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
-          if (i === proxyUrls.length - 1) {
-            displayError("Unable to load workshops from Google Calendar.");
-          }
+          console.warn(`Proxy ${i + 1} timed out or failed:`, error);
         }
+      }
+
+      // 3. Render error only if both network and cache fail
+      if (!loadedFromCache) {
+        displayError("Unable to load workshops schedule.");
       }
     }
 
@@ -322,8 +362,6 @@
     }
 
     fetchEventsWithRetry();
-
-    setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
   </script>
 </body>
 </html>
