@@ -18,6 +18,13 @@
       padding: 0;
     }
 
+    /* Absolute Layout Reset & Standardized Outer Spacing */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     html, body {
       width: 100vw;
       height: 100vh;
@@ -28,12 +35,12 @@
     }
 
     body {
-      padding: 2rem 3rem;
+      padding: 2.5rem; /* Strict fixed padding locks top and left alignment on every screen */
       display: flex;
       flex-direction: column;
     }
 
-    /* Standardized Header Rules */
+    /* Standardized Locked Header Block */
     header {
       display: flex;
       align-items: center;
@@ -41,7 +48,7 @@
       border-bottom: 4px solid var(--patriots-red);
       padding-bottom: 1rem;
       margin-bottom: 1.5rem;
-      height: 90px; /* Fixed height guarantees no vertical layout jump across slides */
+      height: 90px;
       flex-shrink: 0;
     }
 
@@ -53,7 +60,7 @@
     }
 
     h1 {
-      font-size: 2.75rem; /* Explicit fixed size ensures identical text scale across slides */
+      font-size: 2.75rem;
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
