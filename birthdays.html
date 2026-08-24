@@ -33,6 +33,7 @@
       flex-direction: column;
     }
 
+    /* Standardized Header Rules */
     header {
       display: flex;
       align-items: center;
@@ -40,6 +41,7 @@
       border-bottom: 4px solid var(--patriots-red);
       padding-bottom: 1rem;
       margin-bottom: 1.5rem;
+      height: 90px; /* Fixed height guarantees no vertical layout jump across slides */
       flex-shrink: 0;
     }
 
@@ -47,13 +49,16 @@
       height: 70px;
       width: auto;
       object-fit: contain;
+      flex-shrink: 0;
     }
 
     h1 {
-      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-size: 2.75rem; /* Explicit fixed size ensures identical text scale across slides */
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
+      line-height: 1.1;
+      white-space: nowrap;
     }
 
     .content-wrapper {
