@@ -288,9 +288,9 @@
       const blocks = icsData.split('BEGIN:VEVENT');
 
       blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/SUMMARY:(.*)/);
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
-        const locationMatch = block.match(/LOCATION:(.*)/);
+        const summaryMatch = block.match(/SUMMARY:(.*)/)
+        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/)
+        const locationMatch = block.match(/LOCATION:(.*)/)
 
         if (summaryMatch && dtstartMatch) {
           const title = summaryMatch[1].trim();
