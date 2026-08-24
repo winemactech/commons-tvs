@@ -186,6 +186,35 @@
       });
     }
 
+    // Adds ordinal suffixes (1st, 2nd, 3rd, 4th, etc.)
+    function getOrdinalSuffix(day) {
+      if (day > 3 && day < 21) return 'th';
+      switch (day % 10) {
+        case 1:  return 'st';
+        case 2:  return 'nd';
+        case 3:  return 'rd';
+        default: return 'th';
+      }
+    }
+
+    // Formats dates like "8/24/2026" to "August 24th, 2026"
+    function formatDateString(dateStr) {
+      if (!dateStr) return '';
+      
+      const parsedDate = new Date(dateStr);
+      // Fallback if the string isn't a valid parseable date
+      if (isNaN(parsedDate.getTime())) return dateStr;
+
+      // Adjust for time zone offset so the day doesn't roll backwards
+      const utcDate = new Date(parsedDate.getTime() + parsedDate.getTimezoneOffset() * 60000);
+      
+      const month = utcDate.toLocaleString('en-US', { month: 'long' });
+      const day = utcDate.getDate();
+      const year = utcDate.getFullYear();
+      
+      return `${month} ${day}${getOrdinalSuffix(day)}, ${year}`;
+    }
+
     function parseCSVLine(line) {
       const result = [];
       let current = '';
@@ -209,7 +238,6 @@
     function parseCSV(text) {
       if (!text || !text.trim()) return [];
 
-      // Safety check: Filter out HTML/JS error responses
       if (text.includes('<!DOCTYPE html>') || text.includes('function n(a)')) {
         return [];
       }
@@ -341,7 +369,7 @@
         }
 
         if (!todayDate && colA) {
-          todayDate = colA;
+          todayDate = formatDateString(colA);
         }
         if (colB) {
           announcements.push(colB);
