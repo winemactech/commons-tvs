@@ -4,7 +4,12 @@ on:
   schedule:
     # Runs every hour at minute 10
     - cron: '10 * * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fetch-ical.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,11 +24,12 @@ jobs:
       - name: Download Google Calendar ICS
         run: |
           mkdir -p data
-          curl -sL "https://calendar.google.com/calendar/ical/c_4f54bc4f958f2d59ad9513e63ae74f4b93bbfbfad062779ad04ec950a4bf855e%40group.calendar.google.com/public/basic.ics" -o data/workshops.ics
+          # Added -f to fail if the HTTP request returns an error code (4xx/5xx)
+          curl -sLf "https://calendar.google.com/calendar/ical/c_4f54bc4f958f2d59ad9513e63ae74f4b93bbfbfad062779ad04ec950a4bf855e%40group.calendar.google.com/public/basic.ics" -o data/workshops.ics
 
       - name: Commit and Push Updated ICS
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/workshops.ics
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update cached workshop ICS [skip ci]" && git push)
