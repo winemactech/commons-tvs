@@ -175,7 +175,7 @@
       object-fit: cover;
       border: 4px solid var(--patriots-white);
       margin-bottom: 0.6rem;
-      background-color: rgba(255, 255, 255, 0.15);
+      background-color: var(--patriots-navy);
       flex-shrink: 0;
     }
 
@@ -264,6 +264,9 @@
 
     const githubImageBase = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/images/staff/";
 
+    // SVG Profile Silhouette (Navy background, Silver user avatar icon)
+    const svgAvatar = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20fill%3D%22%23002244%22%2F%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2245%22%20r%3D%2224%22%20fill%3D%22%23B0B7BC%22%2F%3E%3Cpath%20d%3D%22M64%2078c-26.7%200-48%2019.3-48%2043h96c0-23.7-21.3-43-48-43z%22%20fill%3D%22%23B0B7BC%22%2F%3E%3C%2Fsvg%3E";
+
     const specialNameColors = {
       "Elanor Hanson": "elanor-hanson",
       "James Hanson": "james-hanson"
@@ -278,11 +281,27 @@
       return `${githubImageBase}${formatted}.jpg`;
     }
 
+    function handleImageError(imgElement, staffName) {
+      if (!staffName) return;
+      const formatted = staffName.trim().replace(/\s+/g, '-').toLowerCase();
+      const extensions = ['.JPG', '.png', '.PNG', '.jpeg', '.JPEG'];
+      
+      const step = parseInt(imgElement.dataset.retryStep || '0');
+      
+      if (step < extensions.length) {
+        imgElement.dataset.retryStep = step + 1;
+        imgElement.src = `${githubImageBase}${formatted}${extensions[step]}`;
+      } else {
+        // Fallback to embedded SVG silhouette if no image extensions are found
+        imgElement.onerror = null;
+        imgElement.src = svgAvatar;
+      }
+    }
+
     function parseDateString(dateStr) {
       if (!dateStr) return null;
       dateStr = String(dateStr).trim();
 
-      // Case 1: MMDD or M/D format without slashes or short string (e.g., "0823" or "823")
       if (/^\d{3,4}$/.test(dateStr)) {
         const padded = dateStr.padStart(4, '0');
         const month = parseInt(padded.substring(0, 2));
@@ -292,7 +311,6 @@
         }
       }
       
-      // Case 2: Standard delimited string with slashes (MM/DD or MM/DD/YYYY)
       const parts = dateStr.split('/');
       if (parts.length >= 2) {
         const month = parseInt(parts[0]);
@@ -494,12 +512,26 @@
         
         const imageUrl = generateGithubImageUrl(bd.name);
         
-        card.innerHTML = `
-          <img class="staff-photo" src="${imageUrl}" alt="${escapeHtml(bd.name)}" 
-               onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${imageUrl.replace('.jpg','.png')}';}else{this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'50\' fill=\'%23B0B7BC\'/%3E%3C/svg%3E';}">
-          <div class="staff-name">${escapeHtml(bd.name)}</div>
-          <div class="staff-date">${formatMMDDToDate(bd.mmdd)}</div>
-        `;
+        const img = document.createElement('img');
+        img.className = 'staff-photo';
+        img.src = imageUrl;
+        img.alt = bd.name;
+        img.onerror = function() {
+          handleImageError(this, bd.name);
+        };
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'staff-name';
+        nameDiv.textContent = bd.name;
+
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'staff-date';
+        dateDiv.textContent = formatMMDDToDate(bd.mmdd);
+
+        card.appendChild(img);
+        card.appendChild(nameDiv);
+        card.appendChild(dateDiv);
+        
         container.appendChild(card);
       });
 
