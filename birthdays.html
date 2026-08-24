@@ -287,6 +287,26 @@
     let studentScrollInterval = null;
     let studentScrollDelay = null;
 
+    async function fetchWithProxy(targetUrl) {
+      const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+      ];
+
+      for (const proxyUrl of proxies) {
+        try {
+          const res = await fetch(proxyUrl);
+          if (res.ok) {
+            const text = await res.text();
+            if (text && text.length > 0) return text;
+          }
+        } catch (e) {
+          console.warn("Proxy attempt failed:", proxyUrl, e);
+        }
+      }
+      return null;
+    }
+
     function generateGithubImageUrl(staffName) {
       if (!staffName) return '';
       const formatted = staffName.trim().replace(/\s+/g, '-').toLowerCase();
@@ -419,10 +439,24 @@
 
     async function fetchStudentBirthdays() {
       try {
-        const response = await fetch(studentSheetUrl);
-        const csv = await response.text();
-        const rows = parseCSV(csv);
-        parseAndRenderStudentBirthdays(rows);
+        let csv = null;
+        try {
+          const res = await fetch(studentSheetUrl);
+          if (res.ok) csv = await res.text();
+        } catch (e) {
+          console.warn("Direct student fetch failed, falling back to proxy...", e);
+        }
+
+        if (!csv) {
+          csv = await fetchWithProxy(studentSheetUrl);
+        }
+
+        if (csv) {
+          const rows = parseCSV(csv);
+          parseAndRenderStudentBirthdays(rows);
+        } else {
+          throw new Error("Unable to fetch student CSV");
+        }
       } catch (error) {
         console.error("Student sheet error:", error);
         document.getElementById('student-container').innerHTML = `<div class="error-message">Unable to load student birthdays.</div>`;
@@ -478,10 +512,24 @@
 
     async function fetchStaffBirthdays() {
       try {
-        const response = await fetch(staffSheetUrl);
-        const csv = await response.text();
-        const rows = parseCSV(csv);
-        parseAndRenderStaffBirthdays(rows);
+        let csv = null;
+        try {
+          const res = await fetch(staffSheetUrl);
+          if (res.ok) csv = await res.text();
+        } catch (e) {
+          console.warn("Direct staff fetch failed, falling back to proxy...", e);
+        }
+
+        if (!csv) {
+          csv = await fetchWithProxy(staffSheetUrl);
+        }
+
+        if (csv) {
+          const rows = parseCSV(csv);
+          parseAndRenderStaffBirthdays(rows);
+        } else {
+          throw new Error("Unable to fetch staff CSV");
+        }
       } catch (error) {
         console.error("Staff sheet error:", error);
         document.getElementById('staff-container').innerHTML = `<div class="error-message">Unable to load staff birthdays.</div>`;
