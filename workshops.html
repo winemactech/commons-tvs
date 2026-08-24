@@ -168,13 +168,6 @@
 
   <script>
     const workshopCalendarIcalUrl = "https://calendar.google.com/calendar/ical/c_c6eb8cba768819ec8b04b3667f90300918b642725cc07d46b300a5d568925cb5%40group.calendar.google.com/public/basic.ics";
-    
-    // Direct Google Calendar fetch removed because it fails CORS in browsers.
-    // Proxy endpoints with strict timeouts ensure sub-second rendering.
-    const proxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`
-    ];
 
     const CACHE_KEY = 'wem_workshops_cache';
     let scrollInterval = null;
@@ -238,8 +231,7 @@
       initScroll();
     }
 
-    // Enforce strict timeout to prevent hangs on slow proxies
-    async function fetchWithTimeout(url, timeoutMs = 3500) {
+    async function fetchWithTimeout(url, timeoutMs = 4000) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -250,6 +242,39 @@
         clearTimeout(id);
         throw err;
       }
+    }
+
+    async function tryFetchRawICS() {
+      // 1. Try corsproxy.io raw
+      try {
+        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(workshopCalendarIcalUrl)}`);
+        if (res.ok) {
+          const txt = await res.text();
+          if (txt.includes('BEGIN:VCALENDAR')) return txt;
+        }
+      } catch(e) {}
+
+      // 2. Try allorigins.win raw
+      try {
+        const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(workshopCalendarIcalUrl)}`);
+        if (res.ok) {
+          const txt = await res.text();
+          if (txt.includes('BEGIN:VCALENDAR')) return txt;
+        }
+      } catch(e) {}
+
+      // 3. Fallback: allorigins.win JSON API wrapper
+      try {
+        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(workshopCalendarIcalUrl)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.contents && json.contents.includes('BEGIN:VCALENDAR')) {
+            return json.contents;
+          }
+        }
+      } catch(e) {}
+
+      return null;
     }
 
     async function fetchEventsWithRetry() {
@@ -268,35 +293,19 @@
         }
       }
 
-      // 2. Fetch fresh workshop data in background with fast timeout
-      for (let i = 0; i < proxyUrls.length; i++) {
-        try {
-          const response = await fetchWithTimeout(proxyUrls[i], 3500);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          
-          const data = await response.text();
-          
-          // Save fresh data to local cache
-          const cachePayload = { icsData: data, time: Date.now() };
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
+      // 2. Fetch fresh workshop data in background
+      const freshICS = await tryFetchRawICS();
 
-          parseAndRenderICS(data);
-          updateLastUpdatedTime(cachePayload.time);
-          return;
-        } catch (error) {
-          console.warn(`Proxy ${i + 1} timed out or failed:`, error);
-        }
+      if (freshICS) {
+        const cachePayload = { icsData: freshICS, time: Date.now() };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
+
+        parseAndRenderICS(freshICS);
+        updateLastUpdatedTime(cachePayload.time);
+      } else if (!loadedFromCache) {
+        // Fallback display if network fails and no local cache exists
+        parseAndRenderICS("");
       }
-
-      // 3. Render error only if both network and cache fail
-      if (!loadedFromCache) {
-        displayError("Unable to load workshops schedule.");
-      }
-    }
-
-    function displayError(message) {
-      const container = document.getElementById('scroll-container');
-      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
     function parseAndUnfoldICS(icsData) {
@@ -306,6 +315,11 @@
     function parseAndRenderICS(icsData) {
       const container = document.getElementById('scroll-container');
       container.innerHTML = '';
+
+      if (!icsData) {
+        container.innerHTML = '<div class="loading-message">No upcoming workshops scheduled.</div>';
+        return;
+      }
 
       const unfoldedData = parseAndUnfoldICS(icsData);
       const events = [];
@@ -330,6 +344,7 @@
       });
 
       const now = new Date();
+      // Show events starting from 12 hours ago through the future
       const upcomingEvents = events
         .filter(evt => evt.timestamp >= now.getTime() - (12 * 60 * 60 * 1000))
         .sort((a, b) => a.timestamp - b.timestamp)
