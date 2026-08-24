@@ -202,10 +202,8 @@
       if (!dateStr) return '';
       
       const parsedDate = new Date(dateStr);
-      // Fallback if the string isn't a valid parseable date
       if (isNaN(parsedDate.getTime())) return dateStr;
 
-      // Adjust for time zone offset so the day doesn't roll backwards
       const utcDate = new Date(parsedDate.getTime() + parsedDate.getTimezoneOffset() * 60000);
       
       const month = utcDate.toLocaleString('en-US', { month: 'long' });
@@ -323,18 +321,22 @@
       dummy.style.wordBreak = 'break-word';
       dummy.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
       dummy.style.padding = '0';
+      dummy.style.boxSizing = 'border-box';
       dummy.textContent = longestText;
       document.body.appendChild(dummy);
 
       let low = 12;
-      let high = 120;
+      let high = 90; // Prevents gigantic text on high-res desktop monitors
       let bestSize = low;
+
+      // 90% vertical target height to guarantee padding buffer
+      const targetHeight = wrapperHeight * 0.90;
 
       while (low <= high) {
         let mid = Math.floor((low + high) / 2);
         dummy.style.fontSize = mid + 'px';
 
-        if (dummy.offsetHeight <= wrapperHeight && dummy.scrollWidth <= wrapperWidth) {
+        if (dummy.offsetHeight <= targetHeight && dummy.scrollWidth <= wrapperWidth) {
           bestSize = mid;
           low = mid + 1;
         } else {
@@ -381,12 +383,6 @@
         return;
       }
 
-      const containerRect = container.getBoundingClientRect();
-      const availableWidth = containerRect.width - 80;
-      const availableHeight = containerRect.height - 120;
-
-      const fontSize = calculateSharedFontSize(announcements, availableWidth, availableHeight);
-
       const total = announcements.length;
       announcements.forEach((text, index) => {
         const card = document.createElement('div');
@@ -398,11 +394,23 @@
             <span>${index + 1} of ${total}</span>
           </div>
           <div class="bulletin-body-wrapper">
-            <div class="bulletin-body" style="font-size: ${fontSize}px;">${escapeHtml(text)}</div>
+            <div class="bulletin-body">${escapeHtml(text)}</div>
           </div>
         `;
 
         container.appendChild(card);
+      });
+
+      // Query real rendering bounds from active DOM container
+      const bodyWrapper = container.querySelector('.bulletin-body-wrapper');
+      const availableWidth = bodyWrapper.clientWidth;
+      const availableHeight = bodyWrapper.clientHeight;
+
+      const fontSize = calculateSharedFontSize(announcements, availableWidth, availableHeight);
+
+      // Apply dynamically scaled size to all active card bodies
+      container.querySelectorAll('.bulletin-body').forEach(el => {
+        el.style.fontSize = `${fontSize}px`;
       });
 
       if (total > 1) {
