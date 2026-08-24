@@ -40,7 +40,7 @@
       gap: 1.5rem;
       border-bottom: 4px solid var(--patriots-red);
       padding-bottom: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
       height: 90px;
       flex-shrink: 0;
     }
@@ -61,102 +61,102 @@
       white-space: nowrap;
     }
 
-    .events-wrapper {
+    .menu-wrapper {
       flex: 1;
       display: flex;
-      flex-direction: column;
-      overflow: hidden;
       min-height: 0;
     }
 
-    .events-scroll-container {
+    /* 3-Column Grid Container */
+    .menu-grid {
       flex: 1;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: clamp(0.75rem, 1.5%, 1rem);
-      padding-right: clamp(0.5rem, 1%, 1rem);
-      overflow-y: auto;
-      min-height: 0;
-    }
-
-    /* 3-Column Layout */
-    .event-card {
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 8px solid var(--patriots-red);
-      border-top: 1px solid rgba(176, 183, 188, 0.15);
-      border-right: 1px solid rgba(176, 183, 188, 0.15);
-      border-bottom: 1px solid rgba(176, 183, 188, 0.15);
-      border-radius: 8px;
-      padding: clamp(1rem, 1.8%, 1.4rem) clamp(1.2rem, 2%, 1.8rem);
       display: grid;
-      grid-template-columns: 1.2fr 2fr 2fr;
-      gap: clamp(1rem, 2%, 2rem);
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-      flex-shrink: 0;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.75rem;
+      height: 100%;
     }
 
-    .event-card.card-red {
-      border-left-color: var(--patriots-red);
+    /* Column Card Base */
+    .menu-card {
+      border-radius: 12px;
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      overflow: hidden;
     }
 
-    .event-card.card-blue {
-      border-left-color: var(--patriots-blue);
+    /* Red Card (Lunches) */
+    .menu-card.card-red {
+      background-color: var(--patriots-red);
     }
 
-    .event-datetime {
-      font-size: clamp(1rem, 2vw, 1.25rem);
-      color: var(--patriots-silver);
-      font-weight: 700;
+    /* Light Blue Card (Breakfast) */
+    .menu-card.card-blue {
+      background-color: var(--patriots-blue);
     }
 
-    .event-title {
-      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-      font-weight: 700;
-      color: var(--patriots-white);
-      line-height: 1.25;
+    .card-header {
+      font-size: clamp(1.25rem, 2vw, 1.75rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 1.25rem;
+      text-align: center;
     }
 
-    .event-location {
-      font-size: clamp(0.9rem, 1.8vw, 1.15rem);
-      color: var(--patriots-silver);
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .menu-item-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .menu-item-line::before {
+      content: "•";
+      font-weight: bold;
+      opacity: 0.8;
+    }
+
+    .no-data-text {
       font-style: italic;
-      text-align: right;
-    }
-
-    .error-message, .loading-message {
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 8px;
-      padding: 1.5rem;
-      font-size: clamp(1rem, 2vw, 1.3rem);
-      color: var(--patriots-white);
-    }
-
-    .events-scroll-container::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .events-scroll-container::-webkit-scrollbar-track {
-      background: rgba(176, 183, 188, 0.1);
-      border-radius: 3px;
-    }
-
-    .events-scroll-container::-webkit-scrollbar-thumb {
-      background: var(--patriots-red);
-      border-radius: 3px;
+      opacity: 0.8;
+      font-weight: 500;
+      text-align: center;
+      margin-top: 2rem;
     }
 
     footer {
-      margin-top: clamp(1rem, 2%, 1.5rem);
-      padding-top: clamp(0.5rem, 1%, 0.75rem);
+      margin-top: 1.5rem;
+      padding-top: 0.75rem;
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
       font-size: clamp(0.8rem, 1.2vw, 1rem);
       opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
+    }
+
+    /* Scrollbar for long description lists */
+    .card-body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .card-body::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
     }
   </style>
 </head>
@@ -167,18 +167,19 @@
     <h1>Breakfast &amp; Lunch</h1>
   </header>
 
-  <div class="events-wrapper">
-    <div class="events-scroll-container" id="scroll-container">
-      <div class="loading-message">Loading menu...</div>
+  <div class="menu-wrapper">
+    <div class="menu-grid" id="menu-grid">
+      <div class="menu-card card-red"><div class="card-header">Loading...</div></div>
+      <div class="menu-card card-blue"><div class="card-header">Loading...</div></div>
+      <div class="menu-card card-red"><div class="card-header">Loading...</div></div>
     </div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Replace this with your actual menu iCal URL from GitHub Actions (data/menu.ics)
     const menuIcsUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/menu.ics";
-    const CACHE_KEY = 'wem_menu_ical_cache_v4';
+    const CACHE_KEY = 'wem_menu_ical_cache_v6';
 
     function updateLastUpdatedTime(timestamp) {
       const displayDate = timestamp ? new Date(timestamp) : new Date();
@@ -189,19 +190,12 @@
 
     function parseICSDate(icsDateStr) {
       if (!icsDateStr) return null;
-      const cleanStr = icsDateStr.split(':').pop().trim();
-      const pureStr = cleanStr.replace('Z', '');
+      const cleanStr = icsDateStr.split(':').pop().trim().replace('Z', '');
 
-      if (pureStr.length === 8) {
-        const year = parseInt(pureStr.substring(0, 4), 10);
-        const month = parseInt(pureStr.substring(4, 6), 10) - 1;
-        const day = parseInt(pureStr.substring(6, 8), 10);
-        return new Date(year, month, day);
-      }
-      if (pureStr.includes('T')) {
-        const year = parseInt(pureStr.substring(0, 4), 10);
-        const month = parseInt(pureStr.substring(4, 6), 10) - 1;
-        const day = parseInt(pureStr.substring(6, 8), 10);
+      if (cleanStr.length >= 8) {
+        const year = parseInt(cleanStr.substring(0, 4), 10);
+        const month = parseInt(cleanStr.substring(4, 6), 10) - 1;
+        const day = parseInt(cleanStr.substring(6, 8), 10);
         return new Date(year, month, day);
       }
       return null;
@@ -222,7 +216,7 @@
         if (line.startsWith('BEGIN:VEVENT')) {
           currentEvent = {};
         } else if (line.startsWith('END:VEVENT')) {
-          if (currentEvent && currentEvent.title && currentEvent.start) {
+          if (currentEvent && currentEvent.start) {
             events.push(currentEvent);
           }
           currentEvent = null;
@@ -232,7 +226,11 @@
           } else if (line.startsWith('DTSTART')) {
             currentEvent.start = parseICSDate(line);
           } else if (line.startsWith('DESCRIPTION:')) {
-            currentEvent.description = line.substring(12).replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\n/g, ' ').trim();
+            currentEvent.description = line.substring(12)
+              .replace(/\\,/g, ',')
+              .replace(/\\;/g, ';')
+              .replace(/\\n/g, '\n')
+              .trim();
           }
         }
       }
@@ -245,68 +243,72 @@
              d1.getDate() === d2.getDate();
     }
 
+    function formatDescriptionLines(descText) {
+      if (!descText || !descText.trim()) return '<div class="no-data-text">No menu items listed</div>';
+
+      const lines = descText.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      if (lines.length === 0) return '<div class="no-data-text">No menu items listed</div>';
+
+      return lines.map(line => `<div class="menu-item-line"><span>${escapeHtml(line)}</span></div>`).join('');
+    }
+
     function renderMenuCards(events) {
-      const container = document.getElementById('scroll-container');
-      container.innerHTML = '';
+      const grid = document.getElementById('menu-grid');
+      grid.innerHTML = '';
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Calculate Next School Day (Tomorrow, or Monday if Fri/Sat)
+      // Determine next school day (Tomorrow, or Monday if Fri/Sat)
       const nextDay = new Date(today);
       const dayOfWeek = today.getDay();
-      if (dayOfWeek === 5) { // Friday -> Jump to Monday (+3 days)
+      if (dayOfWeek === 5) {
         nextDay.setDate(today.getDate() + 3);
-      } else if (dayOfWeek === 6) { // Saturday -> Jump to Monday (+2 days)
+      } else if (dayOfWeek === 6) {
         nextDay.setDate(today.getDate() + 2);
       } else {
         nextDay.setDate(today.getDate() + 1);
       }
 
-      const nextDayName = (dayOfWeek === 5 || dayOfWeek === 6) ? "Monday's" : "Tomorrow's";
+      const nextDayLabel = (dayOfWeek === 5 || dayOfWeek === 6) ? "Monday's" : "Tomorrow's";
 
-      // Match items from calendar
       const todayEvents = events.filter(e => isSameDay(e.start, today));
       const nextDayEvents = events.filter(e => isSameDay(e.start, nextDay));
 
-      // Separate Breakfast / Lunch where applicable
-      const todayLunch = todayEvents.find(e => e.title.toLowerCase().includes('lunch')) || todayEvents[0];
-      const nextBreakfast = nextDayEvents.find(e => e.title.toLowerCase().includes('breakfast')) || nextDayEvents[0];
-      const nextLunch = nextDayEvents.find(e => e.title.toLowerCase().includes('lunch')) || (nextDayEvents.length > 1 ? nextDayEvents[1] : null);
+      // Route events by Title keyword
+      const todayLunch = todayEvents.find(e => (e.title || '').toLowerCase().includes('lunch')) || todayEvents[0];
+      const nextBreakfast = nextDayEvents.find(e => (e.title || '').toLowerCase().includes('breakfast')) || nextDayEvents[0];
+      const nextLunch = nextDayEvents.find(e => (e.title || '').toLowerCase().includes('lunch')) || (nextDayEvents.length > 1 ? nextDayEvents[1] : null);
 
-      // Box 1: Today's Lunch (Red)
-      const card1 = {
-        colorClass: 'card-red',
-        label: "Today's Lunch",
-        main: todayLunch ? todayLunch.title : "No Lunch Posted",
-        sub: todayLunch && todayLunch.description ? todayLunch.description : ""
-      };
+      const cardsConfig = [
+        {
+          type: 'card-red',
+          header: "Today's Lunch",
+          description: todayLunch ? todayLunch.description : ""
+        },
+        {
+          type: 'card-blue',
+          header: `${nextDayLabel} Breakfast`,
+          description: nextBreakfast ? nextBreakfast.description : ""
+        },
+        {
+          type: 'card-red',
+          header: `${nextDayLabel} Lunch`,
+          description: nextLunch ? nextLunch.description : ""
+        }
+      ];
 
-      // Box 2: Tomorrow's / Monday's Breakfast (Blue)
-      const card2 = {
-        colorClass: 'card-blue',
-        label: `${nextDayName} Breakfast`,
-        main: nextBreakfast ? nextBreakfast.title : "No Breakfast Posted",
-        sub: nextBreakfast && nextBreakfast.description ? nextBreakfast.description : ""
-      };
-
-      // Box 3: Tomorrow's / Monday's Lunch (Red)
-      const card3 = {
-        colorClass: 'card-red',
-        label: `${nextDayName} Lunch`,
-        main: nextLunch ? nextLunch.title : (nextBreakfast && !nextDayEvents.find(e => e.title.toLowerCase().includes('lunch')) ? "See Main Menu" : "No Lunch Posted"),
-        sub: nextLunch && nextLunch.description ? nextLunch.description : ""
-      };
-
-      [card1, card2, card3].forEach(cardData => {
-        const card = document.createElement('div');
-        card.className = `event-card ${cardData.colorClass}`;
-        card.innerHTML = `
-          <div class="event-datetime">${escapeHtml(cardData.label)}</div>
-          <div class="event-title">${escapeHtml(cardData.main)}</div>
-          <div class="event-location">${escapeHtml(cardData.sub)}</div>
+      cardsConfig.forEach(card => {
+        const cardElem = document.createElement('div');
+        cardElem.className = `menu-card ${card.type}`;
+        cardElem.innerHTML = `
+          <div class="card-header">${escapeHtml(card.header)}</div>
+          <div class="card-body">${formatDescriptionLines(card.description)}</div>
         `;
-        container.appendChild(card);
+        grid.appendChild(cardElem);
       });
     }
 
@@ -318,7 +320,7 @@
           renderMenuCards(parseICS(ics));
           updateLastUpdatedTime(time);
         } catch (e) {
-          console.error("Cache error:", e);
+          console.error("Cache read error:", e);
         }
       }
 
