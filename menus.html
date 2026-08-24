@@ -183,11 +183,6 @@
   <script>
     const calendarUrl = "https://calendar.google.com/calendar/ical/d9f286b4a71a789a16dab23a962221705c933dd934c53cfb6fbf6a67d4cd0a55%40group.calendar.google.com/public/basic.ics";
 
-    const fetchEndpoints = [
-      `https://corsproxy.io/?${encodeURIComponent(calendarUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`
-    ];
-
     const CACHE_KEY = 'wem_menus_cache';
 
     function getFormattedDate(date) {
@@ -239,8 +234,7 @@
         .filter(line => line.length > 0 && !line.toLowerCase().startsWith('http'));
     }
 
-    // Enforce 3.5s timeout on proxy requests to keep transitions sub-second
-    async function fetchWithTimeout(url, timeoutMs = 3500) {
+    async function fetchWithTimeout(url, timeoutMs = 4000) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -253,51 +247,69 @@
       }
     }
 
+    async function tryFetchRawICS() {
+      // 1. Try corsproxy.io raw
+      try {
+        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(calendarUrl)}`);
+        if (res.ok) {
+          const txt = await res.text();
+          if (txt.includes('BEGIN:VCALENDAR')) return txt;
+        }
+      } catch(e) {}
+
+      // 2. Try allorigins.win raw
+      try {
+        const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(calendarUrl)}`);
+        if (res.ok) {
+          const txt = await res.text();
+          if (txt.includes('BEGIN:VCALENDAR')) return txt;
+        }
+      } catch(e) {}
+
+      // 3. Fallback: allorigins.win JSON API wrapper (bypasses raw CORS restrictions)
+      try {
+        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.contents && json.contents.includes('BEGIN:VCALENDAR')) {
+            return json.contents;
+          }
+        }
+      } catch(e) {}
+
+      return null;
+    }
+
     async function fetchMenuCalendar() {
-      // 1. Immediately display cached menu if present
+      // Step 1: Always render default structure or cached data immediately
       const cached = localStorage.getItem(CACHE_KEY);
-      let loadedFromCache = false;
+      let hasData = false;
 
       if (cached) {
         try {
           const { icsData, time } = JSON.parse(cached);
           parseAndRenderCalendarMenu(icsData);
           updateLastUpdatedTime(time);
-          loadedFromCache = true;
+          hasData = true;
         } catch (e) {
           console.error("Cache read error:", e);
         }
       }
 
-      // 2. Fetch fresh menu data in background
-      for (let url of fetchEndpoints) {
-        try {
-          const response = await fetchWithTimeout(url, 3500);
-          if (!response.ok) throw new Error(`HTTP Status ${response.status}`);
-          
-          const rawText = await response.text();
-          if (rawText.includes('BEGIN:VCALENDAR')) {
-            const cachePayload = { icsData: rawText, time: Date.now() };
-            localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
-
-            parseAndRenderCalendarMenu(rawText);
-            updateLastUpdatedTime(cachePayload.time);
-            return;
-          }
-        } catch (e) {
-          console.warn("Proxy attempt failed or timed out:", e);
-        }
+      // If no cache, render empty 3-card menu layout immediately (no gross full-screen error)
+      if (!hasData) {
+        parseAndRenderCalendarMenu("");
       }
 
-      // 3. If network call failed and no local cache existed, render error notice
-      if (!loadedFromCache) {
-        displayError("Unable to fetch menu data from Google Calendar feed.");
-      }
-    }
+      // Step 2: Fetch fresh data in background
+      const freshICS = await tryFetchRawICS();
+      if (freshICS) {
+        const cachePayload = { icsData: freshICS, time: Date.now() };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
 
-    function displayError(message) {
-      const container = document.getElementById('menu-container');
-      container.innerHTML = `<div class="error-notice">${message}</div>`;
+        parseAndRenderCalendarMenu(freshICS);
+        updateLastUpdatedTime(cachePayload.time);
+      }
     }
 
     function isSameDate(d1, d2) {
@@ -308,46 +320,53 @@
 
     function parseAndRenderCalendarMenu(icsData) {
       const container = document.getElementById('menu-container');
-      const unfolded = unfoldICS(icsData);
-      const events = unfolded.split('BEGIN:VEVENT');
+      
+      let todayLunchItems = [];
+      let nextDayBreakfastItems = [];
+      let nextDayLunchItems = [];
+
+      if (icsData) {
+        const unfolded = unfoldICS(icsData);
+        const events = unfolded.split('BEGIN:VEVENT');
+
+        const today = new Date();
+        const nextSchoolDay = getNextSchoolDay(today);
+
+        events.slice(1).forEach(block => {
+          const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
+          const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
+          const descriptionMatch = block.match(/^DESCRIPTION:(.*)$/m);
+
+          if (dtstartMatch) {
+            const eventDate = parseICalDate(dtstartMatch[1]);
+            if (!eventDate) return;
+
+            const summary = summaryMatch ? summaryMatch[1].trim() : '';
+            const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+
+            const menuList = description ? extractDescriptionItems(description) : [summary];
+            const fullContext = (summary + " " + description).toLowerCase();
+
+            if (isSameDate(eventDate, today)) {
+              if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
+                todayLunchItems.push(...menuList);
+              }
+            } else if (isSameDate(eventDate, nextSchoolDay)) {
+              if (fullContext.includes('breakfast')) {
+                nextDayBreakfastItems.push(...menuList);
+              } else if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
+                nextDayLunchItems.push(...menuList);
+              }
+            }
+          }
+        });
+      }
 
       const today = new Date();
       const nextSchoolDay = getNextSchoolDay(today);
       const nextDayName = (today.getDay() === 5 || today.getDay() === 6) ? "Monday's" : "Tomorrow's";
 
-      let todayLunchItems = [];
-      let nextDayBreakfastItems = [];
-      let nextDayLunchItems = [];
-
-      events.slice(1).forEach(block => {
-        const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
-        const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
-        const descriptionMatch = block.match(/^DESCRIPTION:(.*)$/m);
-
-        if (dtstartMatch) {
-          const eventDate = parseICalDate(dtstartMatch[1]);
-          if (!eventDate) return;
-
-          const summary = summaryMatch ? summaryMatch[1].trim() : '';
-          const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-
-          const menuList = description ? extractDescriptionItems(description) : [summary];
-          const fullContext = (summary + " " + description).toLowerCase();
-
-          if (isSameDate(eventDate, today)) {
-            if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
-              todayLunchItems.push(...menuList);
-            }
-          } else if (isSameDate(eventDate, nextSchoolDay)) {
-            if (fullContext.includes('breakfast')) {
-              nextDayBreakfastItems.push(...menuList);
-            } else if (fullContext.includes('lunch') || (!fullContext.includes('breakfast') && !fullContext.includes('dinner'))) {
-              nextDayLunchItems.push(...menuList);
-            }
-          }
-        }
-      });
-
+      // ALWAYS render the three cards
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
