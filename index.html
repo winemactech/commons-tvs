@@ -22,7 +22,7 @@
       background-color: var(--patriots-navy);
       color: var(--patriots-white);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      padding: clamp(1rem, 3%, 3rem);
+      padding: clamp(1.5rem, 3vh, 3rem);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -31,29 +31,30 @@
     header {
       display: flex;
       align-items: center;
-      gap: clamp(1rem, 2%, 2rem);
+      gap: clamp(1rem, 2vw, 2rem);
       border-bottom: 3px solid var(--patriots-red);
-      padding-bottom: clamp(0.75rem, 2%, 1.5rem);
-      margin-bottom: clamp(1.5rem, 3%, 3rem);
+      padding-bottom: clamp(0.75rem, 1.5vh, 1.5rem);
+      margin-bottom: clamp(1.5rem, 3vh, 3rem);
       flex-shrink: 0;
     }
 
     .logo {
-      height: clamp(60px, 14vw, 120px);
+      height: clamp(50px, 8vh, 90px);
       width: auto;
+      object-fit: contain;
     }
 
     h1 {
-      font-size: clamp(1.5rem, 7vw, 3.5rem);
+      font-size: clamp(1.8rem, 4vh, 3rem);
       font-weight: 800;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
     }
 
     .menu-container {
       flex: 1;
       display: flex;
-      gap: clamp(1rem, 2%, 2rem);
+      gap: clamp(1rem, 2vw, 2rem);
       justify-content: center;
       align-items: center;
       flex-wrap: wrap;
@@ -63,47 +64,51 @@
       background-color: rgba(255, 255, 255, 0.05);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
-      padding: clamp(1rem, 2%, 2rem) clamp(1.5rem, 2.5%, 3rem);
+      padding: clamp(1rem, 2vh, 2rem) clamp(1.5rem, 2.5vw, 2.5rem);
       text-align: center;
       text-decoration: none;
       color: var(--patriots-white);
-      transition: all 0.3s ease;
-      flex: 0 1 clamp(150px, 22%, 250px);
-      cursor: pointer;
+      transition: all 0.25s ease;
+      flex: 1 1 clamp(200px, 18vw, 280px);
+      max-width: 320px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: clamp(150px, 25vh, 250px);
+      min-height: clamp(140px, 20vh, 220px);
+      outline: none;
     }
 
-    .menu-card:hover {
-      background-color: rgba(198, 12, 48, 0.1);
+    /* Combined hover and TV Remote focus states */
+    .menu-card:hover,
+    .menu-card:focus-visible {
+      background-color: rgba(198, 12, 48, 0.2);
+      border-color: var(--patriots-silver);
       transform: scale(1.05);
-      box-shadow: 0 8px 30px rgba(198, 12, 48, 0.3);
+      box-shadow: 0 8px 30px rgba(198, 12, 48, 0.4);
     }
 
     .menu-card h2 {
-      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-size: clamp(1.2rem, 2.5vh, 1.8rem);
       font-weight: 800;
-      margin-bottom: clamp(0.5rem, 1%, 1rem);
+      margin-bottom: clamp(0.4rem, 1vh, 0.8rem);
       letter-spacing: 1px;
       text-transform: uppercase;
     }
 
     .menu-card p {
-      font-size: clamp(0.8rem, 2vw, 0.95rem);
+      font-size: clamp(0.85rem, 1.5vh, 1.05rem);
       color: var(--patriots-silver);
       font-weight: 500;
-      line-height: 1.4;
+      line-height: 1.3;
     }
 
     footer {
-      padding-top: clamp(0.5rem, 1%, 1rem);
+      padding-top: clamp(0.5rem, 1vh, 1rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.75rem, 1.5vw, 0.9rem);
-      opacity: 0.7;
+      font-size: clamp(0.8rem, 1.3vh, 1rem);
+      opacity: 0.8;
       text-align: center;
       flex-shrink: 0;
     }
@@ -113,10 +118,10 @@
 
   <header>
     <img src="https://i0.wp.com/wemschools.org/wp-content/uploads/2019/09/logo.png" alt="Win-E-Mac Patriots Logo" class="logo">
-    <h1>Win-E-Mac Commons TVs</h1>
+    <h1>Win-E-Mac Commons Display</h1>
   </header>
 
-  <div class="menu-container">
+  <main class="menu-container">
     <a href="bulletin.html" class="menu-card">
       <h2>Bulletin</h2>
       <p>Daily announcements</p>
@@ -137,7 +142,7 @@
       <h2>Birthdays</h2>
       <p>Student and staff birthdays</p>
     </a>
-  </div>
+  </main>
 
   <footer>Win-E-Mac Patriots Commons Display</footer>
 
