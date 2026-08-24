@@ -28,7 +28,7 @@
     }
 
     body {
-      padding: 2rem 3rem;
+      padding: clamp(1.5rem, 3%, 3rem);
       display: flex;
       flex-direction: column;
     }
@@ -36,21 +36,21 @@
     header {
       display: flex;
       align-items: center;
-      gap: 1.5rem;
+      gap: clamp(1rem, 2%, 2rem);
       border-bottom: 4px solid var(--patriots-red);
-      padding-bottom: 1rem;
-      margin-bottom: 1.5rem;
+      padding-bottom: clamp(0.75rem, 2%, 1.5rem);
+      margin-bottom: clamp(1rem, 2%, 2rem);
       flex-shrink: 0;
     }
 
     .logo {
-      height: 70px;
+      height: clamp(50px, 10vw, 90px);
       width: auto;
       object-fit: contain;
     }
 
     h1 {
-      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -58,101 +58,75 @@
 
     .bulletin-wrapper {
       flex: 1;
-      position: relative;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 0; /* Prevents flex collapse */
-    }
-
-    .slides-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .announcement-slide {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      padding: 3rem 2rem;
-      text-align: center;
-      background: rgba(255, 255, 255, 0.04);
-      border: 3px solid var(--patriots-red);
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+      position: relative;
+      min-height: 0;
     }
 
-    .announcement-slide.active {
-      opacity: 1;
-      visibility: visible;
-      z-index: 10;
-    }
-
-    .slide-body {
+    .bulletin-card {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 8px solid var(--patriots-red);
+      border-radius: 12px;
+      padding: clamp(1.5rem, 3%, 2.5rem);
       flex: 1;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      overflow: hidden;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      overflow-y: auto;
     }
 
-    .announcement-text {
-      font-size: clamp(1.8rem, 4.5vw, 3.8rem);
+    .bulletin-date {
+      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
       font-weight: 700;
-      line-height: 1.35;
-      color: var(--patriots-white);
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      max-width: 92%;
-    }
-
-    .slide-counter {
-      font-size: clamp(1rem, 1.8vw, 1.4rem);
       color: var(--patriots-silver);
-      font-weight: 600;
-      background: rgba(0, 34, 68, 0.8);
-      padding: 0.4rem 1.2rem;
-      border-radius: 20px;
-      border: 1px solid var(--patriots-silver);
-      margin-top: 1rem;
+      margin-bottom: clamp(1rem, 2%, 1.5rem);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(176, 183, 188, 0.2);
+      padding-bottom: 0.5rem;
       flex-shrink: 0;
     }
 
-    .error-message, .loading-message {
-      background-color: rgba(255, 255, 255, 0.05);
-      border: 3px solid var(--patriots-red);
-      border-radius: 12px;
-      padding: 2rem 3rem;
-      font-size: clamp(1.5rem, 3vw, 2.5rem);
+    .bulletin-content {
+      font-size: clamp(1.15rem, 2.8vw, 1.8rem);
+      line-height: 1.6;
       color: var(--patriots-white);
-      text-align: center;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
-    .error-message {
-      background-color: rgba(198, 12, 48, 0.2);
+    .pending-notice, .error-notice {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 8px solid var(--patriots-silver);
+      border-radius: 12px;
+      padding: clamp(2rem, 4vw, 4rem);
+      font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+      font-weight: 700;
+      color: var(--patriots-white);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .pending-subtitle {
+      font-size: clamp(1rem, 2vw, 1.4rem);
+      font-weight: 400;
+      color: var(--patriots-silver);
+      margin-top: 1rem;
     }
 
     footer {
-      margin-top: 1.5rem;
-      padding-top: 0.75rem;
+      margin-top: clamp(1rem, 2%, 1.5rem);
+      padding-top: clamp(0.5rem, 1%, 0.75rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+      font-size: clamp(0.8rem, 1.2vw, 1rem);
       opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
@@ -166,151 +140,116 @@
     <h1>Daily Bulletin</h1>
   </header>
 
-  <div class="bulletin-wrapper">
-    <div class="slides-container" id="slides-container">
-      <div class="loading-message">Loading announcements...</div>
+  <div class="bulletin-wrapper" id="bulletin-container">
+    <div class="pending-notice">
+      Checking for today's bulletin...
     </div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Direct Google Sheets CSV Export Endpoints
-    const sheetId = "1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0";
-    
-    // We try direct fetch first, followed by fallback export formats
-    const fetchEndpoints = [
-      `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sheet1`,
-      `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`)}`
-    ];
-
-    let currentSlide = 0;
-    let slides = [];
-    let slideInterval = null;
+    // Replace with your Published Google Sheet CSV Link
+    const sheetCsvUrl = "YOUR_PUBLISHED_CSV_URL_HERE";
 
     function updateLastUpdatedTime() {
       const now = new Date();
-      const options = {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'America/Chicago'
-      };
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
+      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+      });
     }
 
-    function showSlide(index) {
-      if (slides.length === 0) return;
-      slides.forEach(slide => slide.classList.remove('active'));
-      
-      currentSlide = index % slides.length;
-      if (slides[currentSlide]) {
-        slides[currentSlide].classList.add('active');
-      }
+    function isToday(dateString) {
+      const parsedDate = new Date(dateString);
+      if (isNaN(parsedDate.getTime())) return false;
+
+      const today = new Date();
+      return parsedDate.getFullYear() === today.getFullYear() &&
+             parsedDate.getMonth() === today.getMonth() &&
+             parsedDate.getDate() === today.getDate();
     }
 
-    function startSlideshow() {
-      if (slideInterval) clearInterval(slideInterval);
-      if (slides.length <= 1) return;
-      
-      slideInterval = setInterval(() => {
-        currentSlide = (currentSlide + 1) % slides.length;
-        showSlide(currentSlide);
-      }, 6000); // 6 seconds per slide
-    }
-
-    async function fetchBulletinWithRetry() {
-      for (let i = 0; i < fetchEndpoints.length; i++) {
-        try {
-          console.log(`Trying endpoint ${i + 1}...`);
-          const response = await fetch(fetchEndpoints[i], { cache: "no-store" });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          
-          const csv = await response.text();
-          if (!csv || csv.includes("<!DOCTYPE html>")) {
-            throw new Error("Received HTML login page instead of CSV data.");
-          }
-          
-          parseAndRenderBulletin(csv);
-          updateLastUpdatedTime();
-          return;
-        } catch (error) {
-          console.error(`Endpoint ${i + 1} failed:`, error);
-          if (i === fetchEndpoints.length - 1) {
-            displayError(`Unable to load bulletin from Google Sheet. Make sure the sheet sharing is set to "Anyone with the link can view".`);
-          }
-        }
-      }
-    }
-
-    function displayError(message) {
-      const container = document.getElementById('slides-container');
-      container.innerHTML = `<div class="error-message">${message}</div>`;
-    }
-
-    function parseCSV(text) {
+    function parseCSV(csvText) {
       const lines = [];
-      let entry = '';
-      let inQuotes = false;
+      let currentRow = [];
+      let currentToken = '';
+      let insideQuotes = false;
 
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (c === '"') {
-          inQuotes = !inQuotes;
-        } else if ((c === '\n' || c === '\r') && !inQuotes) {
-          if (entry.trim()) lines.push(cleanEntry(entry));
-          entry = '';
+      for (let i = 0; i < csvText.length; i++) {
+        const char = csvText[i];
+        const nextChar = csvText[i + 1];
+
+        if (char === '"') {
+          if (insideQuotes && nextChar === '"') {
+            currentToken += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === ',' && !insideQuotes) {
+          currentRow.push(currentToken.trim());
+          currentToken = '';
+        } else if ((char === '\r' || char === '\n') && !insideQuotes) {
+          if (char === '\r' && nextChar === '\n') i++;
+          currentRow.push(currentToken.trim());
+          if (currentRow.length > 0) lines.push(currentRow);
+          currentRow = [];
+          currentToken = '';
         } else {
-          entry += c;
+          currentToken += char;
         }
       }
-      if (entry.trim()) lines.push(cleanEntry(entry));
+      if (currentToken || currentRow.length > 0) {
+        currentRow.push(currentToken.trim());
+        lines.push(currentRow);
+      }
       return lines;
     }
 
-    function cleanEntry(raw) {
-      let trimmed = raw.trim();
-      if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-        trimmed = trimmed.slice(1, -1);
-      }
-      return trimmed.replace(/""/g, '"').trim();
-    }
-
-    function parseAndRenderBulletin(csvText) {
-      const container = document.getElementById('slides-container');
-      container.innerHTML = '';
-      slides = [];
-
-      const announcements = parseCSV(csvText);
-
-      // Filter out header row if present
-      const filteredAnnouncements = announcements.filter(item => 
-        item.toLowerCase() !== "announcements" && item.toLowerCase() !== "bulletin"
-      );
-
-      if (filteredAnnouncements.length === 0) {
-        displayError('No announcements found in the bulletin.');
-        return;
-      }
-
-      filteredAnnouncements.forEach((announcement, index) => {
-        const slide = document.createElement('div');
-        slide.className = 'announcement-slide';
-        if (index === 0) slide.classList.add('active');
+    async function fetchBulletin() {
+      try {
+        const response = await fetch(sheetCsvUrl);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         
-        slide.innerHTML = `
-          <div class="slide-body">
-            <div class="announcement-text">${escapeHtml(announcement)}</div>
+        const rawCsv = await response.text();
+        const parsedRows = parseCSV(rawCsv);
+
+        // Cell A1 (Row 0, Col 0) = Date
+        // Cell B1 (Row 0, Col 1) = Bulletin Content
+        const sheetDateStr = (parsedRows[0] && parsedRows[0][0]) ? parsedRows[0][0] : '';
+        const bulletinContent = (parsedRows[0] && parsedRows[0][1]) ? parsedRows[0][1] : '';
+
+        const container = document.getElementById('bulletin-container');
+
+        if (isToday(sheetDateStr)) {
+          const formattedDate = new Date(sheetDateStr).toLocaleDateString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+          });
+
+          container.innerHTML = `
+            <div class="bulletin-card">
+              <div class="bulletin-date">${formattedDate}</div>
+              <div class="bulletin-content">${escapeHtml(bulletinContent)}</div>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="pending-notice">
+              Today's bulletin has not been published yet.
+              <div class="pending-subtitle">Please check back later for announcements.</div>
+            </div>
+          `;
+        }
+
+        updateLastUpdatedTime();
+      } catch (error) {
+        console.error("Failed to load bulletin:", error);
+        document.getElementById('bulletin-container').innerHTML = `
+          <div class="error-notice">
+            Unable to load daily bulletin.
           </div>
-          <div class="slide-counter">${index + 1} of ${filteredAnnouncements.length}</div>
         `;
-        
-        container.appendChild(slide);
-        slides.push(slide);
-      });
-
-      startSlideshow();
+      }
     }
 
     function escapeHtml(text) {
@@ -319,9 +258,8 @@
       return div.innerHTML;
     }
 
-    // Initial Load & Auto-refresh every 5 minutes
-    fetchBulletinWithRetry();
-    setInterval(fetchBulletinWithRetry, 5 * 60 * 1000);
+    fetchBulletin();
+    setInterval(fetchBulletin, 15 * 60 * 1000);
   </script>
 </body>
 </html>
