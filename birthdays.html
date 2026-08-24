@@ -268,16 +268,15 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const staffSheetId = "1pme-woefOEbcVNejh8QdfK3IW2QxsqZVllnTpPQDFVo";
-    const studentSheetId = "1wH7lhd_pg9jjdSwrOOZmeiFGT5lDqdJXZWhbbYPPsTI";
-    
-    const staffSheetUrl = `https://docs.google.com/spreadsheets/d/${staffSheetId}/gviz/tq?tqx=out:csv&sheet=Sheet1`;
-    const studentSheetUrl = `https://docs.google.com/spreadsheets/d/${studentSheetId}/gviz/tq?tqx=out:csv&sheet=Sheet1`;
+    // Direct static URLs hosted via GitHub repository
+    const staffCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/staff_birthdays.csv";
+    const studentCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/student_birthdays.csv";
 
     const githubImageBase = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/images/staff/";
-
-    // SVG Profile Silhouette (Navy background, Silver user avatar icon)
     const svgAvatar = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20fill%3D%22%23002244%22%2F%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2245%22%20r%3D%2224%22%20fill%3D%22%23B0B7BC%22%2F%3E%3Cpath%20d%3D%22M64%2078c-26.7%200-48%2019.3-48%2043h96c0-23.7-21.3-43-48-43z%22%20fill%3D%22%23B0B7BC%22%2F%3E%3C%2Fsvg%3E";
+
+    const CACHE_STAFF_KEY = 'wem_staff_birthdays_cache';
+    const CACHE_STUDENT_KEY = 'wem_student_birthdays_cache';
 
     const specialNameColors = {
       "Elanor Hanson": "elanor-hanson",
@@ -286,26 +285,6 @@
 
     let studentScrollInterval = null;
     let studentScrollDelay = null;
-
-    async function fetchWithProxy(targetUrl) {
-      const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
-      ];
-
-      for (const proxyUrl of proxies) {
-        try {
-          const res = await fetch(proxyUrl);
-          if (res.ok) {
-            const text = await res.text();
-            if (text && text.length > 0) return text;
-          }
-        } catch (e) {
-          console.warn("Proxy attempt failed:", proxyUrl, e);
-        }
-      }
-      return null;
-    }
 
     function generateGithubImageUrl(staffName) {
       if (!staffName) return '';
@@ -324,7 +303,6 @@
         imgElement.dataset.retryStep = step + 1;
         imgElement.src = `${githubImageBase}${formatted}${extensions[step]}`;
       } else {
-        // Fallback to embedded SVG silhouette if no image extensions are found
         imgElement.onerror = null;
         imgElement.src = svgAvatar;
       }
@@ -386,10 +364,10 @@
       return `${months[parseInt(month) - 1]} ${parseInt(day)}`;
     }
 
-    function updateLastUpdatedTime() {
-      const now = new Date();
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+    function updateLastUpdatedTime(timestamp) {
+      const displayDate = timestamp ? new Date(timestamp) : new Date();
+      document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago'
       });
     }
 
@@ -438,28 +416,30 @@
     }
 
     async function fetchStudentBirthdays() {
-      try {
-        let csv = null;
+      const cached = localStorage.getItem(CACHE_STUDENT_KEY);
+      if (cached) {
         try {
-          const res = await fetch(studentSheetUrl);
-          if (res.ok) csv = await res.text();
+          const { csv, time } = JSON.parse(cached);
+          parseAndRenderStudentBirthdays(parseCSV(csv));
+          updateLastUpdatedTime(time);
         } catch (e) {
-          console.warn("Direct student fetch failed, falling back to proxy...", e);
+          console.error("Student cache read error:", e);
         }
+      }
 
-        if (!csv) {
-          csv = await fetchWithProxy(studentSheetUrl);
-        }
+      try {
+        const res = await fetch(studentCsvUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const csv = await res.text();
 
-        if (csv) {
-          const rows = parseCSV(csv);
-          parseAndRenderStudentBirthdays(rows);
-        } else {
-          throw new Error("Unable to fetch student CSV");
-        }
+        localStorage.setItem(CACHE_STUDENT_KEY, JSON.stringify({ csv, time: Date.now() }));
+        parseAndRenderStudentBirthdays(parseCSV(csv));
+        updateLastUpdatedTime(Date.now());
       } catch (error) {
-        console.error("Student sheet error:", error);
-        document.getElementById('student-container').innerHTML = `<div class="error-message">Unable to load student birthdays.</div>`;
+        console.warn("Student fetch error:", error);
+        if (!cached) {
+          document.getElementById('student-container').innerHTML = `<div class="error-message">Unable to load student birthdays.</div>`;
+        }
       }
     }
 
@@ -507,32 +487,33 @@
       });
 
       startStudentScroll();
-      updateLastUpdatedTime();
     }
 
     async function fetchStaffBirthdays() {
-      try {
-        let csv = null;
+      const cached = localStorage.getItem(CACHE_STAFF_KEY);
+      if (cached) {
         try {
-          const res = await fetch(staffSheetUrl);
-          if (res.ok) csv = await res.text();
+          const { csv, time } = JSON.parse(cached);
+          parseAndRenderStaffBirthdays(parseCSV(csv));
+          updateLastUpdatedTime(time);
         } catch (e) {
-          console.warn("Direct staff fetch failed, falling back to proxy...", e);
+          console.error("Staff cache read error:", e);
         }
+      }
 
-        if (!csv) {
-          csv = await fetchWithProxy(staffSheetUrl);
-        }
+      try {
+        const res = await fetch(staffCsvUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const csv = await res.text();
 
-        if (csv) {
-          const rows = parseCSV(csv);
-          parseAndRenderStaffBirthdays(rows);
-        } else {
-          throw new Error("Unable to fetch staff CSV");
-        }
+        localStorage.setItem(CACHE_STAFF_KEY, JSON.stringify({ csv, time: Date.now() }));
+        parseAndRenderStaffBirthdays(parseCSV(csv));
+        updateLastUpdatedTime(Date.now());
       } catch (error) {
-        console.error("Staff sheet error:", error);
-        document.getElementById('staff-container').innerHTML = `<div class="error-message">Unable to load staff birthdays.</div>`;
+        console.warn("Staff fetch error:", error);
+        if (!cached) {
+          document.getElementById('staff-container').innerHTML = `<div class="error-message">Unable to load staff birthdays.</div>`;
+        }
       }
     }
 
@@ -594,8 +575,6 @@
         
         container.appendChild(card);
       });
-
-      updateLastUpdatedTime();
     }
 
     function escapeHtml(text) {
@@ -606,11 +585,6 @@
 
     fetchStudentBirthdays();
     fetchStaffBirthdays();
-
-    setInterval(() => {
-      fetchStudentBirthdays();
-      fetchStaffBirthdays();
-    }, 15 * 60 * 1000);
   </script>
 </body>
 </html>
