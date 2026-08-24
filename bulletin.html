@@ -175,7 +175,7 @@
 
   <script>
     const liveBulletinCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/bulletin.csv";
-    const CACHE_KEY = 'wem_bulletin_cache_v2';
+    const CACHE_KEY = 'wem_bulletin_cache_v4';
 
     let rotateInterval = null;
 
@@ -208,6 +208,12 @@
 
     function parseCSV(text) {
       if (!text || !text.trim()) return [];
+
+      // Safety check: Filter out HTML/JS error responses
+      if (text.includes('<!DOCTYPE html>') || text.includes('function n(a)')) {
+        return [];
+      }
+
       const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
       if (lines.length < 2) return [];
 
@@ -229,9 +235,12 @@
       if (cached) {
         try {
           const { csv, time } = JSON.parse(cached);
-          renderBulletin(parseCSV(csv));
-          updateLastUpdatedTime(time);
-          loadedFromCache = true;
+          const parsed = parseCSV(csv);
+          if (parsed.length > 0) {
+            renderBulletin(parsed);
+            updateLastUpdatedTime(time);
+            loadedFromCache = true;
+          }
         } catch (e) {
           console.error("Cache read error:", e);
         }
@@ -242,10 +251,15 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const csvText = await response.text();
-        
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csvText, time: Date.now() }));
-        renderBulletin(parseCSV(csvText));
-        updateLastUpdatedTime(Date.now());
+        const parsed = parseCSV(csvText);
+
+        if (parsed.length > 0) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csvText, time: Date.now() }));
+          renderBulletin(parsed);
+          updateLastUpdatedTime(Date.now());
+        } else if (!loadedFromCache) {
+          displayError("Unable to parse bulletin content. Verify sheet formatting.");
+        }
       } catch (error) {
         console.warn("Live fetch failed. Utilizing cache fallback:", error);
         if (!loadedFromCache) {
@@ -321,6 +335,10 @@
         const keys = Object.keys(row);
         const colA = row[keys[0]] ? row[keys[0]].trim() : '';
         const colB = row[keys[1]] ? row[keys[1]].trim() : '';
+
+        if (colA.startsWith('function') || colB.startsWith('function') || colB.includes('ppConfig')) {
+          return;
+        }
 
         if (!todayDate && colA) {
           todayDate = colA;
