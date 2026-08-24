@@ -19,12 +19,17 @@
       padding: 0;
     }
 
-    body {
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
       background-color: var(--patriots-navy);
       color: var(--patriots-white);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      padding: clamp(1rem, 3%, 3rem);
-      min-height: 100vh;
+    }
+
+    body {
+      padding: clamp(1.5rem, 3%, 3rem);
       display: flex;
       flex-direction: column;
     }
@@ -33,19 +38,20 @@
       display: flex;
       align-items: center;
       gap: clamp(1rem, 2%, 2rem);
-      border-bottom: 3px solid var(--patriots-red);
+      border-bottom: 4px solid var(--patriots-red);
       padding-bottom: clamp(0.75rem, 2%, 1.5rem);
       margin-bottom: clamp(1rem, 2%, 2rem);
       flex-shrink: 0;
     }
 
     .logo {
-      height: clamp(50px, 12vw, 100px);
+      height: clamp(50px, 10vw, 90px);
       width: auto;
+      object-fit: contain;
     }
 
     h1 {
-      font-size: clamp(1.5rem, 6vw, 3rem);
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -62,7 +68,7 @@
 
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: clamp(1rem, 3%, 2rem);
       flex: 1;
       align-items: stretch;
@@ -73,7 +79,7 @@
       background-color: var(--patriots-red);
       border: 3px solid var(--patriots-red);
       border-radius: 12px;
-      padding: clamp(1rem, 2%, 2rem);
+      padding: clamp(1.2rem, 2%, 2rem);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -87,10 +93,10 @@
     }
 
     .menu-card-header {
-      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
       font-weight: 800;
       color: var(--patriots-white);
-      margin-bottom: clamp(0.75rem, 1.5%, 1.5rem);
+      margin-bottom: clamp(0.5rem, 1%, 1rem);
       text-transform: uppercase;
       letter-spacing: 1px;
       border-bottom: 2px solid var(--patriots-white);
@@ -99,10 +105,10 @@
     }
 
     .menu-card-date {
-      font-size: clamp(0.9rem, 2vw, 1.2rem);
-      color: rgba(255, 255, 255, 0.8);
-      margin-bottom: clamp(0.5rem, 1%, 1rem);
-      font-weight: 500;
+      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: clamp(0.75rem, 1.5%, 1.2rem);
+      font-weight: 600;
       flex-shrink: 0;
     }
 
@@ -115,9 +121,9 @@
     }
 
     .menu-item {
-      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      font-size: clamp(1rem, 2vw, 1.3rem);
       color: var(--patriots-white);
-      line-height: 1.5;
+      line-height: 1.4;
       padding: clamp(0.3rem, 0.5%, 0.5rem) 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
@@ -127,44 +133,42 @@
     }
 
     .no-menu {
-      font-size: clamp(0.95rem, 2vw, 1.2rem);
-      color: rgba(255, 255, 255, 0.7);
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: rgba(255, 255, 255, 0.8);
       font-style: italic;
     }
 
-    .error-message {
-      background-color: rgba(198, 12, 48, 0.8);
-      border: 3px solid var(--patriots-white);
+    .stale-notice {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 8px solid var(--patriots-red);
       border-radius: 12px;
-      padding: clamp(1rem, 2%, 2rem);
-      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      padding: clamp(2rem, 4vw, 4rem);
+      font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+      font-weight: 700;
       color: var(--patriots-white);
       text-align: center;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      height: 100%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
 
-    .loading-message {
-      background-color: rgba(198, 12, 48, 0.8);
-      border: 3px solid var(--patriots-white);
-      border-radius: 12px;
-      padding: clamp(1rem, 2%, 2rem);
-      font-size: clamp(1rem, 2.5vw, 1.5rem);
-      color: var(--patriots-white);
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .stale-notice .subtext {
+      font-size: clamp(1rem, 2vw, 1.4rem);
+      color: var(--patriots-silver);
+      font-weight: 400;
+      margin-top: 1rem;
     }
 
     footer {
-      margin-top: clamp(1rem, 2%, 2rem);
-      padding-top: clamp(0.5rem, 1%, 1rem);
+      margin-top: clamp(1rem, 2%, 1.5rem);
+      padding-top: clamp(0.5rem, 1%, 0.75rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.75rem, 1.5vw, 0.9rem);
-      opacity: 0.7;
+      font-size: clamp(0.8rem, 1.2vw, 1rem);
+      opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
     }
@@ -178,62 +182,53 @@
   </header>
 
   <div class="menu-wrapper" id="menu-container">
-    <div class="loading-message">Loading menu...</div>
+    <div class="stale-notice">Loading menu...</div>
   </div>
 
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Google Sheet configuration
     const sheetId = "1f2ydFePdNHRrWldHYpJQnYnMFP0zT_UlFN8WtzUMrt0";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=menus`;
 
-    // Get today's date formatted
     function getTodayFormatted() {
-      const today = new Date();
-      return today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     }
 
-    // Get tomorrow's date formatted
     function getTomorrowFormatted() {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       return tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     }
 
-    // Get day name (e.g., "Monday", "Tuesday")
-    function getDayName(date) {
-      const options = { weekday: 'long' };
-      return date.toLocaleDateString('en-US', options);
-    }
-
-    // Get tomorrow's day name
-    function getTomorrowDayName() {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return getDayName(tomorrow);
-    }
-
-    // Update last updated timestamp
     function updateLastUpdatedTime() {
       const now = new Date();
-      const options = {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'America/Chicago'
-      };
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
+      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+      });
     }
 
-    // Parse menu text to extract meals
-    // Looks for patterns like "Breakfast on Monday will be..." or "Lunch today will be..."
+    // Checks if text contains today's numeric date (e.g., "August 24" or "8/24" or "24th")
+    function isBulletinFromToday(text) {
+      const today = new Date();
+      const monthName = today.toLocaleDateString('en-US', { month: 'long' }).toLowerCase();
+      const monthShort = today.toLocaleDateString('en-US', { month: 'short' }).toLowerCase();
+      const dayNum = today.getDate();
+      const monthNum = today.getMonth() + 1;
+
+      const textLower = text.toLowerCase();
+
+      // Check for patterns like "August 24", "Aug 24", "8/24"
+      const datePattern1 = new RegExp(`${monthName}\\s+0?${dayNum}\\b`);
+      const datePattern2 = new RegExp(`${monthShort}\\s+0?${dayNum}\\b`);
+      const datePattern3 = new RegExp(`\\b0?${monthNum}\/0?${dayNum}\\b`);
+
+      return datePattern1.test(textLower) || datePattern2.test(textLower) || datePattern3.test(textLower);
+    }
+
     function parseMenuText(text) {
       if (!text) return [];
-
       const meals = [];
-      
-      // Pattern to match: (Breakfast|Lunch|Dinner) (today|tomorrow|on [DayName]|) will be (.*)
       const mealRegex = /(Breakfast|Lunch|Dinner)\s+(?:on\s+)?(\w+)?\s+(?:will be|is)\s+(.+?)(?=(?:Breakfast|Lunch|Dinner)|$)/gi;
       
       let match;
@@ -242,142 +237,76 @@
         const dayRef = match[2] ? match[2].trim().toLowerCase() : 'today';
         let menuItems = match[3].trim();
         
-        // Remove trailing period if present
-        if (menuItems.endsWith('.')) {
-          menuItems = menuItems.slice(0, -1).trim();
-        }
+        if (menuItems.endsWith('.')) menuItems = menuItems.slice(0, -1).trim();
         
-        // Split menu items by "and" or comma
         const items = menuItems
           .split(/\s+and\s+|\s*,\s*/)
           .map(item => item.trim())
           .filter(item => item.length > 0);
         
-        meals.push({
-          mealType,
-          dayRef,
-          items
-        });
+        meals.push({ mealType, dayRef, items });
       }
-      
       return meals;
     }
 
-    // Normalize day references to match our display days
-    function normalizeDayRef(dayRef, tomorrowDayName) {
-      dayRef = dayRef.toLowerCase();
-      
-      if (dayRef === 'today') {
-        return 'today';
-      } else if (dayRef === 'tomorrow') {
-        return 'tomorrow';
-      } else if (dayRef === tomorrowDayName.toLowerCase()) {
-        return 'tomorrow';
-      }
-      
-      return null; // Day not recognized
+    function displayStaleNotice() {
+      const container = document.getElementById('menu-container');
+      container.innerHTML = `
+        <div class="stale-notice">
+          The Daily Bulletin hasn't come out yet today.
+          <div class="subtext">This screen will automatically update as soon as today's menu is posted.</div>
+        </div>
+      `;
     }
 
     async function fetchMenus() {
       try {
-        console.log("Fetching menus from Google Sheet...");
         const response = await fetch(sheetUrl);
         const csv = await response.text();
         
-        console.log("Successfully fetched menu data");
-        console.log("Raw CSV:", csv);
-        
-        // Split by newlines and get first data row
         const lines = csv.trim().split('\n');
         if (lines.length === 0) {
-          displayError("No menu data found in sheet.");
+          displayStaleNotice();
           return;
         }
-        
-        // Get first data row (skip if it looks like a header)
+
+        const fullRawText = lines.join(' ').replace(/"/g, '');
+
+        // If today's date isn't found anywhere in the bulletin row, treat it as unupdated
+        if (!isBulletinFromToday(fullRawText)) {
+          displayStaleNotice();
+          updateLastUpdatedTime();
+          return;
+        }
+
         let menuText = lines[0];
-        if (lines.length > 1 && (lines[0].toLowerCase().includes('menu') || lines[0].toLowerCase().includes('breakfast'))) {
-          menuText = lines[1]; // Use second line if first is header
+        if (lines.length > 1 && (lines[0].toLowerCase().includes('menu') || lines[0].toLowerCase().includes('date'))) {
+          menuText = lines[1];
         }
         
-        menuText = menuText.replace(/"/g, ''); // Remove quotes from CSV
-        console.log("Menu text:", menuText);
-        
-        parseAndRenderMenus(menuText);
+        parseAndRenderMenus(menuText.replace(/"/g, ''));
         updateLastUpdatedTime();
       } catch (error) {
         console.error("Error fetching menus:", error);
-        displayError(`Unable to load menus. Check console for details.`);
+        displayStaleNotice();
       }
-    }
-
-    function displayError(message) {
-      const container = document.getElementById('menu-container');
-      container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
     function parseAndRenderMenus(menuText) {
       const container = document.getElementById('menu-container');
-      
-      // Parse the menu text
       const meals = parseMenuText(menuText);
-      console.log("Parsed meals:", meals);
 
-      if (meals.length === 0) {
-        container.innerHTML = `
-          <div class="menu-grid">
-            <div class="menu-card">
-              <div class="menu-card-header">Today's Lunch</div>
-              <div class="menu-card-date">${getTodayFormatted()}</div>
-              <div class="menu-items">
-                <div class="no-menu">No menu available</div>
-              </div>
-            </div>
-            <div class="menu-card breakfast">
-              <div class="menu-card-header">Tomorrow's Breakfast</div>
-              <div class="menu-card-date">${getTomorrowFormatted()}</div>
-              <div class="menu-items">
-                <div class="no-menu">No menu available</div>
-              </div>
-            </div>
-            <div class="menu-card">
-              <div class="menu-card-header">Tomorrow's Lunch</div>
-              <div class="menu-card-date">${getTomorrowFormatted()}</div>
-              <div class="menu-items">
-                <div class="no-menu">No menu available</div>
-              </div>
-            </div>
-          </div>
-        `;
-        return;
-      }
+      const todayLunch = meals.find(m => m.mealType.toLowerCase() === 'lunch' && m.dayRef === 'today');
+      const tomorrowBreakfast = meals.find(m => m.mealType.toLowerCase() === 'breakfast' && (m.dayRef === 'tomorrow' || m.dayRef !== 'today'));
+      const tomorrowLunch = meals.find(m => m.mealType.toLowerCase() === 'lunch' && m.dayRef === 'tomorrow');
 
-      const tomorrowDayName = getTomorrowDayName();
-
-      // Find relevant meals
-      const todayLunch = meals.find(m => 
-        m.mealType.toLowerCase() === 'lunch' && 
-        normalizeDayRef(m.dayRef, tomorrowDayName) === 'today'
-      );
-
-      const tomorrowBreakfast = meals.find(m => 
-        m.mealType.toLowerCase() === 'breakfast' && 
-        normalizeDayRef(m.dayRef, tomorrowDayName) === 'tomorrow'
-      );
-
-      const tomorrowLunch = meals.find(m => 
-        m.mealType.toLowerCase() === 'lunch' && 
-        normalizeDayRef(m.dayRef, tomorrowDayName) === 'tomorrow'
-      );
-
-      // Render the menu grid
       container.innerHTML = `
         <div class="menu-grid">
           <div class="menu-card">
             <div class="menu-card-header">Today's Lunch</div>
             <div class="menu-card-date">${getTodayFormatted()}</div>
             <div class="menu-items">
-              ${todayLunch ? renderMenuItems(todayLunch.items) : '<div class="no-menu">No menu available</div>'}
+              ${todayLunch ? renderMenuItems(todayLunch.items) : '<div class="no-menu">No menu listed</div>'}
             </div>
           </div>
           
@@ -385,7 +314,7 @@
             <div class="menu-card-header">Tomorrow's Breakfast</div>
             <div class="menu-card-date">${getTomorrowFormatted()}</div>
             <div class="menu-items">
-              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.items) : '<div class="no-menu">No menu available</div>'}
+              ${tomorrowBreakfast ? renderMenuItems(tomorrowBreakfast.items) : '<div class="no-menu">No menu listed</div>'}
             </div>
           </div>
           
@@ -393,7 +322,7 @@
             <div class="menu-card-header">Tomorrow's Lunch</div>
             <div class="menu-card-date">${getTomorrowFormatted()}</div>
             <div class="menu-items">
-              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.items) : '<div class="no-menu">No menu available</div>'}
+              ${tomorrowLunch ? renderMenuItems(tomorrowLunch.items) : '<div class="no-menu">No menu listed</div>'}
             </div>
           </div>
         </div>
@@ -401,19 +330,17 @@
     }
 
     function renderMenuItems(items) {
-      if (!items || items.length === 0) {
-        return '<div class="no-menu">No menu available</div>';
-      }
-
-      return items
-        .map(item => `<div class="menu-item">${item}</div>`)
-        .join('');
+      if (!items || items.length === 0) return '<div class="no-menu">No menu listed</div>';
+      return items.map(item => `<div class="menu-item">${escapeHtml(item)}</div>`).join('');
     }
 
-    // Initial Fetch
-    fetchMenus();
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-    // Auto-refresh every 15 minutes
+    fetchMenus();
     setInterval(fetchMenus, 15 * 60 * 1000);
   </script>
 </body>
