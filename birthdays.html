@@ -12,12 +12,6 @@
       --patriots-white: #FFFFFF;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     /* Absolute Layout Reset & Standardized Outer Spacing */
     *, *::before, *::after {
       box-sizing: border-box;
@@ -86,7 +80,7 @@
     }
 
     .section-title {
-      font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
       font-weight: 700;
       color: var(--patriots-red);
       margin-bottom: 1rem;
@@ -100,29 +94,29 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.8rem;
+      gap: 1.2rem;
       padding-right: 0.8rem;
       min-height: 0;
     }
 
     .student-card {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 8px solid var(--patriots-red);
+      border-left: 10px solid var(--patriots-red);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       border-right: 1px solid rgba(176, 183, 188, 0.2);
       border-bottom: 1px solid rgba(176, 183, 188, 0.2);
-      border-radius: 8px;
-      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
       display: grid;
       grid-template-columns: 2fr 1fr 1.2fr;
-      gap: 1rem;
+      gap: 1.5rem;
       align-items: center;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       flex-shrink: 0;
     }
 
     .student-name {
-      font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+      font-size: clamp(1.8rem, 3.2vw, 2.5rem);
       font-weight: 700;
       color: var(--patriots-white);
     }
@@ -136,14 +130,14 @@
     }
 
     .student-date {
-      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      font-size: clamp(1.5rem, 2.6vw, 2.1rem);
       color: var(--patriots-silver);
       font-weight: 600;
       text-align: center;
     }
 
     .student-age {
-      font-size: clamp(1rem, 2vw, 1.3rem);
+      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
       color: #FF6B6B;
       font-weight: 800;
       text-align: right;
@@ -220,14 +214,14 @@
     }
 
     .student-scroll-container::-webkit-scrollbar {
-      width: 6px;
+      width: 8px;
     }
     .student-scroll-container::-webkit-scrollbar-track {
       background: rgba(176, 183, 188, 0.1);
     }
     .student-scroll-container::-webkit-scrollbar-thumb {
       background: var(--patriots-red);
-      border-radius: 3px;
+      border-radius: 4px;
     }
 
     footer {
@@ -376,6 +370,9 @@
       if (studentScrollInterval) clearInterval(studentScrollInterval);
       if (studentScrollDelay) clearTimeout(studentScrollDelay);
       
+      // Only scroll if content overflows the visible area
+      if (container.scrollHeight <= container.clientHeight) return;
+
       studentScrollDelay = setTimeout(() => {
         studentScrollInterval = setInterval(() => {
           container.scrollTop += 1;
@@ -472,7 +469,10 @@
         return;
       }
 
-      birthdays.forEach(bd => {
+      // Restrict display to top 10 upcoming birthdays
+      const displayStudents = birthdays.slice(0, 10);
+
+      displayStudents.forEach(bd => {
         const card = document.createElement('div');
         card.className = 'student-card';
         
