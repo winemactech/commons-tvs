@@ -169,11 +169,13 @@
   <script>
     const boundIcalUrl = "https://gobound.com/mn/schools/winemac/calendar/ical/2417b68941d2412";
     
+    // Uses faster CORS proxies with strict fallback
     const proxyUrls = [
       `https://corsproxy.io/?${encodeURIComponent(boundIcalUrl)}`,
       `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`
     ];
 
+    const CACHE_KEY = 'wem_events_cache';
     let scrollInterval = null;
     let scrollDelay = null;
 
@@ -201,10 +203,10 @@
       });
     }
 
-    function updateLastUpdatedTime() {
-      const now = new Date();
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+    function updateLastUpdatedTime(timestamp) {
+      const displayDate = timestamp ? new Date(timestamp) : new Date();
+      document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago'
       });
     }
 
@@ -235,21 +237,59 @@
       initScroll();
     }
 
+    // Helper: Fetch with a strict timeout (e.g., 3.5s)
+    async function fetchWithTimeout(url, timeoutMs = 3500) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    }
+
     async function fetchEventsWithRetry() {
+      // 1. Instantly render from local cache if present
+      const cached = localStorage.getItem(CACHE_KEY);
+      let loadedFromCache = false;
+
+      if (cached) {
+        try {
+          const { icsData, time } = JSON.parse(cached);
+          parseAndRenderICS(icsData);
+          updateLastUpdatedTime(time);
+          loadedFromCache = true;
+        } catch (e) {
+          console.error("Cache read error:", e);
+        }
+      }
+
+      // 2. Fetch fresh data in parallel or fallback with fast timeouts
       for (let i = 0; i < proxyUrls.length; i++) {
         try {
-          const response = await fetch(proxyUrls[i]);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const response = await fetchWithTimeout(proxyUrls[i], 3500);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          
           const data = await response.text();
+          
+          // Save to local cache for instant loading next loop
+          const cachePayload = { icsData: data, time: Date.now() };
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
+
           parseAndRenderICS(data);
-          updateLastUpdatedTime();
+          updateLastUpdatedTime(cachePayload.time);
           return;
         } catch (error) {
-          console.error(`Proxy ${i + 1} failed:`, error);
-          if (i === proxyUrls.length - 1) {
-            displayError("Unable to load events from Bound calendar.");
-          }
+          console.warn(`Proxy ${i + 1} timed out or failed:`, error);
         }
+      }
+
+      // 3. Fallback if network failed and no cache existed
+      if (!loadedFromCache) {
+        displayError("Unable to load events schedule.");
       }
     }
 
@@ -259,7 +299,6 @@
     }
 
     function parseAndUnfoldICS(icsData) {
-      // Unfold multi-line iCal text headers (lines folded with CRLF + Space/Tab)
       return icsData.replace(/\r?\n[ \t]/g, '');
     }
 
@@ -290,9 +329,8 @@
       });
 
       const now = new Date();
-      // Filter out past events and display upcoming schedule
       const upcomingEvents = events
-        .filter(evt => evt.timestamp >= now.getTime() - (12 * 60 * 60 * 1000)) // Keep events starting today
+        .filter(evt => evt.timestamp >= now.getTime() - (12 * 60 * 60 * 1000))
         .sort((a, b) => a.timestamp - b.timestamp)
         .slice(0, 25);
 
@@ -322,9 +360,8 @@
       return div.innerHTML;
     }
 
+    // Execute immediately on load
     fetchEventsWithRetry();
-
-    setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
   </script>
 </body>
 </html>
