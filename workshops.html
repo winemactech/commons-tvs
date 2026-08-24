@@ -170,8 +170,8 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const workshopsCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/workshops.csv";
-    const CACHE_KEY = 'wem_workshops_cache';
+    const workshopsIcsUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/workshops.ics";
+    const CACHE_KEY = 'wem_workshops_ical_cache';
 
     let scrollInterval = null;
     let scrollDelay = null;
@@ -210,41 +210,95 @@
       initScroll();
     }
 
-    function parseCSV(text) {
-      const lines = [];
-      let entry = '';
-      let inQuotes = false;
+    function parseICSDate(icsDateStr) {
+      if (!icsDateStr) return null;
+      const cleanStr = icsDateStr.replace(/.*:/, '').trim();
+      
+      if (cleanStr.length === 8) {
+        const year = parseInt(cleanStr.substring(0, 4));
+        const month = parseInt(cleanStr.substring(4, 6)) - 1;
+        const day = parseInt(cleanStr.substring(6, 8));
+        return { date: new Date(year, month, day), isAllDay: true };
+      }
 
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (c === '"') {
-          inQuotes = !inQuotes;
-        } else if ((c === '\n' || c === '\r') && !inQuotes) {
-          if (entry.trim()) lines.push(entry.trim());
-          entry = '';
-        } else {
-          entry += c;
+      const year = parseInt(cleanStr.substring(0, 4));
+      const month = parseInt(cleanStr.substring(4, 6)) - 1;
+      const day = parseInt(cleanStr.substring(6, 8));
+      const hour = parseInt(cleanStr.substring(9, 11)) || 0;
+      const min = parseInt(cleanStr.substring(11, 13)) || 0;
+      
+      let dateObj = new Date(Date.UTC(year, month, day, hour, min));
+      return { date: dateObj, isAllDay: false };
+    }
+
+    function formatEventDate(dateObj, isAllDay) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthStr = months[dateObj.getMonth()];
+      const dayStr = dateObj.getDate();
+
+      if (isAllDay) {
+        return `${monthStr} ${dayStr}`;
+      }
+
+      let hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+
+      return `${monthStr} ${dayStr}, ${hours}:${minutes} ${ampm}`;
+    }
+
+    function parseICS(icsData) {
+      const events = [];
+      const lines = icsData.split(/\r\n|\n|\r/);
+      let currentEvent = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // Handle unfolded multiline headers
+        while (i + 1 < lines.length && (lines[i + 1].startsWith(' ') || lines[i + 1].startsWith('\t'))) {
+          line += lines[i + 1].substring(1);
+          i++;
+        }
+
+        if (line.startsWith('BEGIN:VEVENT')) {
+          currentEvent = {};
+        } else if (line.startsWith('END:VEVENT')) {
+          if (currentEvent && currentEvent.title && currentEvent.start) {
+            events.push(currentEvent);
+          }
+          currentEvent = null;
+        } else if (currentEvent) {
+          if (line.startsWith('SUMMARY:')) {
+            currentEvent.title = line.substring(8).replace(/\\,/g, ',').replace(/\\;/g, ';').trim();
+          } else if (line.startsWith('DTSTART')) {
+            const parsed = parseICSDate(line);
+            if (parsed) {
+              currentEvent.start = parsed.date;
+              currentEvent.isAllDay = parsed.isAllDay;
+            }
+          } else if (line.startsWith('LOCATION:')) {
+            currentEvent.location = line.substring(9).replace(/\\,/g, ',').replace(/\\;/g, ';').trim();
+          }
         }
       }
-      if (entry.trim()) lines.push(entry.trim());
-      
-      if (lines.length < 2) return [];
-      
-      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
-      return lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = values[i] !== undefined ? values[i] : '');
-        return obj;
-      });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Filter out past workshops and sort ascending
+      return events
+        .filter(e => e.start >= today)
+        .sort((a, b) => a.start - b.start);
     }
 
     async function fetchWorkshops() {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
-          const { csv, time } = JSON.parse(cached);
-          renderWorkshops(parseCSV(csv));
+          const { ics, time } = JSON.parse(cached);
+          renderWorkshops(parseICS(ics));
           updateLastUpdatedTime(time);
         } catch (e) {
           console.error("Cache read error:", e);
@@ -252,16 +306,16 @@
       }
 
       try {
-        const response = await fetch(workshopsCsvUrl, { cache: 'no-store' });
+        const response = await fetch(workshopsIcsUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        const csvText = await response.text();
+        const icsText = await response.text();
         
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csvText, time: Date.now() }));
-        renderWorkshops(parseCSV(csvText));
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ics: icsText, time: Date.now() }));
+        renderWorkshops(parseICS(icsText));
         updateLastUpdatedTime(Date.now());
       } catch (error) {
-        console.warn("Workshop fetch error:", error);
+        console.warn("Workshop ICS fetch error:", error);
         if (!cached) {
           displayError("Unable to load workshops schedule.");
         }
@@ -273,32 +327,23 @@
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function renderWorkshops(rows) {
+    function renderWorkshops(events) {
       const container = document.getElementById('scroll-container');
       container.innerHTML = '';
 
-      if (!rows || rows.length === 0) {
+      if (!events || events.length === 0) {
         container.innerHTML = '<div class="loading-message">No upcoming workshops scheduled.</div>';
         return;
       }
 
-      rows.forEach(row => {
-        const keys = Object.keys(row);
-        
-        // Exact match attempts with fallbacks to positional column index
-        const title = row['Workshop'] || row['Title'] || row['Name'] || row['Event'] || row[keys[0]] || '';
-        const datetime = row['Date/Time'] || row['Date'] || row['Time'] || row['When'] || row[keys[1]] || '';
-        const location = row['Location'] || row['Room'] || row['Where'] || row[keys[2]] || '';
-
-        if (!title.trim() && !datetime.trim()) return;
-
+      events.forEach(event => {
         const card = document.createElement('div');
         card.className = 'event-card';
         
         card.innerHTML = `
-          <div class="event-title">${escapeHtml(title)}</div>
-          <div class="event-datetime">${escapeHtml(datetime)}</div>
-          <div class="event-location">${location ? escapeHtml(location) : 'TBD'}</div>
+          <div class="event-title">${escapeHtml(event.title)}</div>
+          <div class="event-datetime">${formatEventDate(event.start, event.isAllDay)}</div>
+          <div class="event-location">${event.location ? escapeHtml(event.location) : 'TBD'}</div>
         `;
         container.appendChild(card);
       });
