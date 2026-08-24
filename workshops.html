@@ -212,26 +212,27 @@
 
     function parseICSDate(icsDateStr) {
       if (!icsDateStr) return null;
-      const cleanStr = icsDateStr.replace(/.*:/, '').trim();
+      const cleanStr = icsDateStr.replace(/.*:/, '').replace(/Z$/, '').trim();
       
       if (cleanStr.length === 8) {
-        const year = parseInt(cleanStr.substring(0, 4));
-        const month = parseInt(cleanStr.substring(4, 6)) - 1;
-        const day = parseInt(cleanStr.substring(6, 8));
+        const year = parseInt(cleanStr.substring(0, 4), 10);
+        const month = parseInt(cleanStr.substring(4, 6), 10) - 1;
+        const day = parseInt(cleanStr.substring(6, 8), 10);
         return { date: new Date(year, month, day), isAllDay: true };
       }
 
-      const year = parseInt(cleanStr.substring(0, 4));
-      const month = parseInt(cleanStr.substring(4, 6)) - 1;
-      const day = parseInt(cleanStr.substring(6, 8));
-      const hour = parseInt(cleanStr.substring(9, 11)) || 0;
-      const min = parseInt(cleanStr.substring(11, 13)) || 0;
+      const year = parseInt(cleanStr.substring(0, 4), 10);
+      const month = parseInt(cleanStr.substring(4, 6), 10) - 1;
+      const day = parseInt(cleanStr.substring(6, 8), 10);
+      const hour = parseInt(cleanStr.substring(9, 11), 10) || 0;
+      const min = parseInt(cleanStr.substring(11, 13), 10) || 0;
       
-      let dateObj = new Date(Date.UTC(year, month, day, hour, min));
-      return { date: dateObj, isAllDay: false };
+      return { date: new Date(year, month, day, hour, min), isAllDay: false };
     }
 
     function formatEventDate(dateObj, isAllDay) {
+      if (!dateObj || isNaN(dateObj.getTime())) return 'TBD';
+
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const monthStr = months[dateObj.getMonth()];
       const dayStr = dateObj.getDate();
@@ -256,7 +257,6 @@
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
 
-        // Handle unfolded multiline headers
         while (i + 1 < lines.length && (lines[i + 1].startsWith(' ') || lines[i + 1].startsWith('\t'))) {
           line += lines[i + 1].substring(1);
           i++;
@@ -287,19 +287,21 @@
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Filter out past workshops and sort ascending
       return events
-        .filter(e => e.start >= today)
+        .filter(e => e.start && e.start >= today)
         .sort((a, b) => a.start - b.start);
     }
 
     async function fetchWorkshops() {
       const cached = localStorage.getItem(CACHE_KEY);
+      let loadedFromCache = false;
+
       if (cached) {
         try {
           const { ics, time } = JSON.parse(cached);
           renderWorkshops(parseICS(ics));
           updateLastUpdatedTime(time);
+          loadedFromCache = true;
         } catch (e) {
           console.error("Cache read error:", e);
         }
@@ -316,7 +318,7 @@
         updateLastUpdatedTime(Date.now());
       } catch (error) {
         console.warn("Workshop ICS fetch error:", error);
-        if (!cached) {
+        if (!loadedFromCache) {
           displayError("Unable to load workshops schedule.");
         }
       }
