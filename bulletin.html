@@ -66,46 +66,71 @@
       flex-direction: column;
       overflow: hidden;
       min-height: 0;
+      position: relative;
     }
 
-    .bulletin-scroll-container {
+    .bulletin-card-container {
       flex: 1;
+      width: 100%;
       height: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: clamp(1rem, 1.8%, 1.25rem);
-      padding-right: clamp(0.5rem, 1%, 1rem);
-      overflow-y: auto;
-      min-height: 0;
+      position: relative;
     }
 
     .bulletin-card {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background-color: rgba(255, 255, 255, 0.05);
       border-left: 8px solid var(--patriots-red);
       border-top: 1px solid rgba(176, 183, 188, 0.15);
       border-right: 1px solid rgba(176, 183, 188, 0.15);
       border-bottom: 1px solid rgba(176, 183, 188, 0.15);
       border-radius: 8px;
-      padding: clamp(1.2rem, 2%, 1.6rem);
+      padding: clamp(1.5rem, 3vw, 2.5rem);
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 1rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      pointer-events: none;
+    }
+
+    .bulletin-card.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .bulletin-header-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: clamp(1.1rem, 2vw, 1.5rem);
+      font-weight: 700;
+      color: var(--patriots-silver);
+      border-bottom: 1px solid rgba(176, 183, 188, 0.2);
+      padding-bottom: 0.5rem;
       flex-shrink: 0;
     }
 
-    .bulletin-title {
-      font-size: clamp(1.2rem, 2.4vw, 1.6rem);
-      font-weight: 800;
-      color: var(--patriots-white);
-      line-height: 1.2;
+    .bulletin-body-wrapper {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
     .bulletin-body {
-      font-size: clamp(1rem, 1.8vw, 1.25rem);
-      color: var(--patriots-silver);
-      line-height: 1.4;
+      color: var(--patriots-white);
+      line-height: 1.35;
       white-space: pre-wrap;
+      word-wrap: break-word;
+      text-align: center;
+      width: 100%;
     }
 
     .error-message, .loading-message {
@@ -119,20 +144,6 @@
 
     .error-message {
       background-color: rgba(198, 12, 48, 0.2);
-    }
-
-    .bulletin-scroll-container::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .bulletin-scroll-container::-webkit-scrollbar-track {
-      background: rgba(176, 183, 188, 0.1);
-      border-radius: 3px;
-    }
-
-    .bulletin-scroll-container::-webkit-scrollbar-thumb {
-      background: var(--patriots-red);
-      border-radius: 3px;
     }
 
     footer {
@@ -155,7 +166,7 @@
   </header>
 
   <div class="bulletin-wrapper">
-    <div class="bulletin-scroll-container" id="scroll-container">
+    <div class="bulletin-card-container" id="card-container">
       <div class="loading-message">Loading announcements...</div>
     </div>
   </div>
@@ -166,41 +177,13 @@
     const liveBulletinCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/bulletin.csv";
     const CACHE_KEY = 'wem_bulletin_cache_v2';
 
-    let scrollInterval = null;
-    let scrollDelay = null;
+    let rotateInterval = null;
 
     function updateLastUpdatedTime(timestamp) {
       const displayDate = timestamp ? new Date(timestamp) : new Date();
       document.getElementById('last-updated').textContent = displayDate.toLocaleTimeString('en-US', {
         hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago'
       });
-    }
-
-    function startAutoScroll() {
-      const container = document.getElementById('scroll-container');
-      
-      if (scrollInterval) clearInterval(scrollInterval);
-      if (scrollDelay) clearTimeout(scrollDelay);
-
-      function initScroll() {
-        if (container.scrollHeight <= container.clientHeight) return;
-
-        scrollDelay = setTimeout(() => {
-          scrollInterval = setInterval(() => {
-            container.scrollTop += 1;
-
-            if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
-              clearInterval(scrollInterval);
-              setTimeout(() => {
-                container.scrollTop = 0;
-                initScroll();
-              }, 2000);
-            }
-          }, 40);
-        }, 2000);
-      }
-
-      initScroll();
     }
 
     function parseCSVLine(line) {
@@ -272,55 +255,120 @@
     }
 
     function displayError(message) {
-      const container = document.getElementById('scroll-container');
+      const container = document.getElementById('card-container');
       container.innerHTML = `<div class="error-message">${message}</div>`;
     }
 
-    function getValueByKeys(row, possibleKeys) {
-      const rowKeys = Object.keys(row);
-      for (const targetKey of possibleKeys) {
-        const foundKey = rowKeys.find(k => k.toLowerCase() === targetKey.toLowerCase());
-        if (foundKey && row[foundKey]) {
-          return row[foundKey];
+    function calculateSharedFontSize(items, wrapperWidth, wrapperHeight) {
+      let maxLen = 0;
+      let longestText = '';
+      
+      items.forEach(item => {
+        if (item.length > maxLen) {
+          maxLen = item.length;
+          longestText = item;
+        }
+      });
+
+      if (!longestText) return 16;
+
+      const dummy = document.createElement('div');
+      dummy.style.position = 'absolute';
+      dummy.style.visibility = 'hidden';
+      dummy.style.width = wrapperWidth + 'px';
+      dummy.style.lineHeight = '1.35';
+      dummy.style.whiteSpace = 'pre-wrap';
+      dummy.style.wordBreak = 'break-word';
+      dummy.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+      dummy.style.padding = '0';
+      dummy.textContent = longestText;
+      document.body.appendChild(dummy);
+
+      let low = 12;
+      let high = 120;
+      let bestSize = low;
+
+      while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+        dummy.style.fontSize = mid + 'px';
+
+        if (dummy.offsetHeight <= wrapperHeight && dummy.scrollWidth <= wrapperWidth) {
+          bestSize = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
         }
       }
-      return '';
+
+      document.body.removeChild(dummy);
+      return bestSize;
     }
 
     function renderBulletin(rows) {
-      const container = document.getElementById('scroll-container');
+      const container = document.getElementById('card-container');
       container.innerHTML = '';
+      if (rotateInterval) clearInterval(rotateInterval);
 
       if (!rows || rows.length === 0) {
         container.innerHTML = '<div class="loading-message">No announcements posted for today.</div>';
         return;
       }
 
-      let validCardCount = 0;
+      let todayDate = '';
+      const announcements = [];
 
       rows.forEach(row => {
-        const title = getValueByKeys(row, ['Title', 'Announcement', 'Header', 'Subject', 'Topic']);
-        const body = getValueByKeys(row, ['Details', 'Body', 'Description', 'Message', 'Content', 'Note']);
+        const keys = Object.keys(row);
+        const colA = row[keys[0]] ? row[keys[0]].trim() : '';
+        const colB = row[keys[1]] ? row[keys[1]].trim() : '';
 
-        if (!title.trim() && !body.trim()) return;
-
-        validCardCount++;
-        const card = document.createElement('div');
-        card.className = 'bulletin-card';
-        
-        card.innerHTML = `
-          ${title ? `<div class="bulletin-title">${escapeHtml(title)}</div>` : ''}
-          ${body ? `<div class="bulletin-body">${escapeHtml(body)}</div>` : ''}
-        `;
-        container.appendChild(card);
+        if (!todayDate && colA) {
+          todayDate = colA;
+        }
+        if (colB) {
+          announcements.push(colB);
+        }
       });
 
-      if (validCardCount === 0) {
+      if (announcements.length === 0) {
         container.innerHTML = '<div class="loading-message">No active announcements available.</div>';
         return;
       }
 
-      startAutoScroll();
+      const containerRect = container.getBoundingClientRect();
+      const availableWidth = containerRect.width - 80;
+      const availableHeight = containerRect.height - 120;
+
+      const fontSize = calculateSharedFontSize(announcements, availableWidth, availableHeight);
+
+      const total = announcements.length;
+      announcements.forEach((text, index) => {
+        const card = document.createElement('div');
+        card.className = `bulletin-card ${index === 0 ? 'active' : ''}`;
+
+        card.innerHTML = `
+          <div class="bulletin-header-meta">
+            <span>${escapeHtml(todayDate)}</span>
+            <span>${index + 1} of ${total}</span>
+          </div>
+          <div class="bulletin-body-wrapper">
+            <div class="bulletin-body" style="font-size: ${fontSize}px;">${escapeHtml(text)}</div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      if (total > 1) {
+        let currentIndex = 0;
+        const cards = container.querySelectorAll('.bulletin-card');
+
+        rotateInterval = setInterval(() => {
+          cards[currentIndex].classList.remove('active');
+          currentIndex = (currentIndex + 1) % total;
+          cards[currentIndex].classList.add('active');
+        }, 8000);
+      }
     }
 
     function escapeHtml(text) {
