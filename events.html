@@ -18,12 +18,17 @@
       padding: 0;
     }
 
-    body {
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
       background-color: var(--patriots-navy);
       color: var(--patriots-white);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      padding: clamp(1rem, 3%, 3rem);
-      min-height: 100vh;
+    }
+
+    body {
+      padding: clamp(1.5rem, 3%, 3rem);
       display: flex;
       flex-direction: column;
     }
@@ -32,19 +37,20 @@
       display: flex;
       align-items: center;
       gap: clamp(1rem, 2%, 2rem);
-      border-bottom: 3px solid var(--patriots-red);
+      border-bottom: 4px solid var(--patriots-red);
       padding-bottom: clamp(0.75rem, 2%, 1.5rem);
       margin-bottom: clamp(1rem, 2%, 2rem);
       flex-shrink: 0;
     }
 
     .logo {
-      height: clamp(50px, 12vw, 100px);
+      height: clamp(50px, 10vw, 90px);
       width: auto;
+      object-fit: contain;
     }
 
     h1 {
-      font-size: clamp(1.5rem, 6vw, 3rem);
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -52,76 +58,73 @@
 
     .events-wrapper {
       flex: 1;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      position: relative;
+      overflow: hidden;
       min-height: 0;
     }
 
     .events-scroll-container {
+      flex: 1;
+      height: 100%;
       display: flex;
       flex-direction: column;
       gap: clamp(0.75rem, 1.5%, 1rem);
       padding-right: clamp(0.5rem, 1%, 1rem);
       overflow-y: auto;
-      flex: 1;
       min-height: 0;
     }
 
     .event-card {
       background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
+      border-left: 8px solid var(--patriots-red);
       border-top: 1px solid rgba(176, 183, 188, 0.15);
       border-right: 1px solid rgba(176, 183, 188, 0.15);
       border-bottom: 1px solid rgba(176, 183, 188, 0.15);
-      border-radius: 6px;
-      padding: clamp(0.85rem, 1.5%, 1.25rem) clamp(1rem, 1.5%, 1.5rem);
+      border-radius: 8px;
+      padding: clamp(1rem, 1.8%, 1.4rem) clamp(1.2rem, 2%, 1.8rem);
       display: grid;
-      grid-template-columns: 2fr 1.5fr 1.5fr;
+      grid-template-columns: 2fr 1.3fr 1.2fr;
       gap: clamp(1rem, 2%, 2rem);
       align-items: center;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       flex-shrink: 0;
     }
 
     .event-title {
-      font-size: clamp(1.2rem, 3vw, 1.6rem);
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
       font-weight: 700;
       color: var(--patriots-white);
+      line-height: 1.25;
     }
 
     .event-datetime {
-      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      font-size: clamp(1rem, 2vw, 1.25rem);
       color: var(--patriots-silver);
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .event-location {
-      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      font-size: clamp(0.9rem, 1.8vw, 1.15rem);
       color: var(--patriots-silver);
       font-style: italic;
+      text-align: right;
+    }
+
+    .error-message, .loading-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-left: 6px solid var(--patriots-red);
+      border-radius: 8px;
+      padding: 1.5rem;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: var(--patriots-white);
     }
 
     .error-message {
       background-color: rgba(198, 12, 48, 0.2);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 6px;
-      padding: clamp(1rem, 1.5%, 1.5rem);
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      color: var(--patriots-white);
     }
 
-    .loading-message {
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 6px solid var(--patriots-red);
-      border-radius: 6px;
-      padding: clamp(1rem, 1.5%, 1.5rem);
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      color: var(--patriots-white);
-    }
-
-    /* Scrollbar styling */
+    /* Scrollbar Styling */
     .events-scroll-container::-webkit-scrollbar {
       width: 6px;
     }
@@ -132,21 +135,17 @@
     }
 
     .events-scroll-container::-webkit-scrollbar-thumb {
-      background: rgba(198, 12, 48, 0.5);
+      background: var(--patriots-red);
       border-radius: 3px;
     }
 
-    .events-scroll-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(198, 12, 48, 0.7);
-    }
-
     footer {
-      margin-top: clamp(1rem, 2%, 2rem);
-      padding-top: clamp(0.5rem, 1%, 1rem);
+      margin-top: clamp(1rem, 2%, 1.5rem);
+      padding-top: clamp(0.5rem, 1%, 0.75rem);
       border-top: 1px solid rgba(176, 183, 188, 0.2);
       color: var(--patriots-silver);
-      font-size: clamp(0.75rem, 1.5vw, 0.9rem);
-      opacity: 0.7;
+      font-size: clamp(0.8rem, 1.2vw, 1rem);
+      opacity: 0.8;
       text-align: right;
       flex-shrink: 0;
     }
@@ -159,8 +158,8 @@
     <h1>Upcoming Events</h1>
   </header>
 
-  <div class="events-wrapper" id="events-container">
-    <div class="events-scroll-container">
+  <div class="events-wrapper">
+    <div class="events-scroll-container" id="scroll-container">
       <div class="loading-message">Loading events...</div>
     </div>
   </div>
@@ -168,100 +167,79 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    // Direct Bound iCal Feed URL
     const boundIcalUrl = "https://gobound.com/mn/schools/winemac/calendar/ical/2417b68941d2412";
     
-    // Try multiple CORS proxies in case one fails
     const proxyUrls = [
       `https://corsproxy.io/?${encodeURIComponent(boundIcalUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`,
-      `https://cors-anywhere.herokuapp.com/${boundIcalUrl}`
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(boundIcalUrl)}`
     ];
 
     let scrollInterval = null;
     let scrollDelay = null;
 
-    // Parse iCal date format (e.g., "20260822T143000Z" or "20260822")
     function parseICalDate(dateStr) {
       if (!dateStr) return null;
-      
       dateStr = dateStr.trim();
       
-      if (dateStr.includes('T')) {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        const hour = dateStr.substring(9, 11);
-        const minute = dateStr.substring(11, 13);
-        return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
-      } else {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        return new Date(`${year}-${month}-${day}T00:00:00Z`);
-      }
+      const match = dateStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z?)?/);
+      if (!match) return null;
+
+      const [, year, month, day, hour = "00", minute = "00", second = "00"] = match;
+      return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
     }
 
-    // Format date and time for display
     function formatDateForDisplay(dateObj) {
       if (!dateObj) return "TBD";
       
-      const options = {
+      return dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
         timeZone: 'America/Chicago'
-      };
-      
-      return dateObj.toLocaleDateString('en-US', options);
+      });
     }
 
-    // Update last updated timestamp
     function updateLastUpdatedTime() {
       const now = new Date();
-      const options = {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'America/Chicago'
-      };
-      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', options);
+      document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Chicago'
+      });
     }
 
-    // Start auto-scroll
     function startAutoScroll() {
-      const scrollContainer = document.querySelector('.events-scroll-container');
+      const container = document.getElementById('scroll-container');
       
-      // Clear any existing scroll intervals
       if (scrollInterval) clearInterval(scrollInterval);
       if (scrollDelay) clearTimeout(scrollDelay);
-      
-      // Wait 2 seconds before starting scroll
-      scrollDelay = setTimeout(() => {
-        console.log("Starting auto-scroll...");
-        scrollInterval = setInterval(() => {
-          scrollContainer.scrollTop += 1;
-          
-          // If we've scrolled to the bottom, reset to top
-          if (scrollContainer.scrollTop >= scrollContainer.scrollHeight - scrollContainer.clientHeight) {
-            scrollContainer.scrollTop = 0;
-          }
-        }, 50); // Adjust speed here (lower = faster)
-      }, 2000); // 2 second delay before starting
+
+      function initScroll() {
+        if (container.scrollHeight <= container.clientHeight) return;
+
+        scrollDelay = setTimeout(() => {
+          scrollInterval = setInterval(() => {
+            container.scrollTop += 1;
+
+            if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+              clearInterval(scrollInterval);
+              setTimeout(() => {
+                container.scrollTop = 0;
+                initScroll();
+              }, 2000);
+            }
+          }, 40);
+        }, 2000);
+      }
+
+      initScroll();
     }
 
     async function fetchEventsWithRetry() {
       for (let i = 0; i < proxyUrls.length; i++) {
         try {
-          const response = await fetch(proxyUrls[i], { 
-            method: 'GET',
-            timeout: 10000
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
+          const response = await fetch(proxyUrls[i]);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           const data = await response.text();
           parseAndRenderICS(data);
           updateLastUpdatedTime();
@@ -269,80 +247,83 @@
         } catch (error) {
           console.error(`Proxy ${i + 1} failed:`, error);
           if (i === proxyUrls.length - 1) {
-            displayError(`Unable to load events from Bound calendar. Please try refreshing the page.`);
+            displayError("Unable to load events from Bound calendar.");
           }
         }
       }
     }
 
     function displayError(message) {
-      const container = document.getElementById('events-container');
-      container.innerHTML = `<div class="events-scroll-container"><div class="error-message">${message}</div></div>`;
+      const container = document.getElementById('scroll-container');
+      container.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function parseAndUnfoldICS(icsData) {
+      // Unfold multi-line iCal text headers (lines folded with CRLF + Space/Tab)
+      return icsData.replace(/\r?\n[ \t]/g, '');
     }
 
     function parseAndRenderICS(icsData) {
-      const container = document.querySelector('.events-scroll-container');
+      const container = document.getElementById('scroll-container');
       container.innerHTML = '';
 
+      const unfoldedData = parseAndUnfoldICS(icsData);
       const events = [];
-      const blocks = icsData.split('BEGIN:VEVENT');
+      const blocks = unfoldedData.split('BEGIN:VEVENT');
 
       blocks.slice(1).forEach(block => {
-        const summaryMatch = block.match(/SUMMARY:(.*)/)
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/)
-        const locationMatch = block.match(/LOCATION:(.*)/)
+        const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
+        const dtstartMatch = block.match(/^DTSTART(?:;[^:]*)?:(.*)$/m);
+        const locationMatch = block.match(/^LOCATION:(.*)$/m);
 
         if (summaryMatch && dtstartMatch) {
-          const title = summaryMatch[1].trim();
+          let title = summaryMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';');
           const rawDate = dtstartMatch[1].trim();
-          const location = locationMatch ? locationMatch[1].trim() : '';
+          let location = locationMatch ? locationMatch[1].trim().replace(/\\,/g, ',').replace(/\\;/g, ';') : '';
+          
           const dateObj = parseICalDate(rawDate);
           
-          events.push({ 
-            title, 
-            rawDate,
-            location,
-            dateObj,
-            timestamp: dateObj ? dateObj.getTime() : 0
-          });
+          if (dateObj) {
+            events.push({ title, location, dateObj, timestamp: dateObj.getTime() });
+          }
         }
       });
 
-      // Sort events by date and filter out past events
       const now = new Date();
+      // Filter out past events and display upcoming schedule
       const upcomingEvents = events
-        .filter(evt => evt.dateObj && evt.dateObj > now)
+        .filter(evt => evt.timestamp >= now.getTime() - (12 * 60 * 60 * 1000)) // Keep events starting today
         .sort((a, b) => a.timestamp - b.timestamp)
-        .slice(0, 10);
+        .slice(0, 25);
 
       if (upcomingEvents.length === 0) {
-        container.innerHTML = '<div class="error-message">No upcoming events scheduled.</div>';
+        container.innerHTML = '<div class="loading-message">No upcoming events scheduled.</div>';
         return;
       }
 
-      // Show upcoming events
       upcomingEvents.forEach(evt => {
         const card = document.createElement('div');
         card.className = 'event-card';
-        const formattedDate = formatDateForDisplay(evt.dateObj);
-        const locationDisplay = evt.location || 'TBD';
         
         card.innerHTML = `
-          <div class="event-title">${evt.title}</div>
-          <div class="event-datetime">${formattedDate}</div>
-          <div class="event-location">${locationDisplay}</div>
+          <div class="event-title">${escapeHtml(evt.title)}</div>
+          <div class="event-datetime">${formatDateForDisplay(evt.dateObj)}</div>
+          <div class="event-location">${evt.location ? escapeHtml(evt.location) : 'TBD'}</div>
         `;
         container.appendChild(card);
       });
 
-      // Start auto-scroll after rendering
       startAutoScroll();
     }
 
-    // Initial Fetch
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
     fetchEventsWithRetry();
 
-    // Auto-refresh every 15 minutes
     setInterval(fetchEventsWithRetry, 15 * 60 * 1000);
   </script>
 </body>
