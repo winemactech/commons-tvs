@@ -163,8 +163,8 @@
   <footer>Last updated: <span id="last-updated">Just now</span></footer>
 
   <script>
-    const liveBulletinCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5K9W9X4J1d_JmN9Y68z8a2k0B5lC1n_8Y9I4dKx0M0rF9G8H/pub?output=csv";
-    const CACHE_KEY = 'wem_bulletin_cache';
+    const liveBulletinCsvUrl = "https://raw.githubusercontent.com/winemactech/commons-tvs/main/data/bulletin.csv";
+    const CACHE_KEY = 'wem_bulletin_cache_v2';
 
     let scrollInterval = null;
     let scrollDelay = null;
@@ -239,19 +239,6 @@
       });
     }
 
-    async function fetchWithTimeout(url, timeoutMs = 5000) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
-        clearTimeout(id);
-        return response;
-      } catch (err) {
-        clearTimeout(id);
-        throw err;
-      }
-    }
-
     async function fetchBulletin() {
       const cached = localStorage.getItem(CACHE_KEY);
       let loadedFromCache = false;
@@ -268,7 +255,7 @@
       }
 
       try {
-        const response = await fetchWithTimeout(liveBulletinCsvUrl, 5000);
+        const response = await fetch(liveBulletinCsvUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const csvText = await response.text();
@@ -277,7 +264,7 @@
         renderBulletin(parseCSV(csvText));
         updateLastUpdatedTime(Date.now());
       } catch (error) {
-        console.warn("Live fetch timed out or failed. Utilizing cache fallback:", error);
+        console.warn("Live fetch failed. Utilizing cache fallback:", error);
         if (!loadedFromCache) {
           displayError("Unable to load daily bulletin. Check sheet publication link.");
         }
